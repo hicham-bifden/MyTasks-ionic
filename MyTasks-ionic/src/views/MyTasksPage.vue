@@ -26,7 +26,7 @@
       </div>
       <ion-text v-else color="medium">Aucune tâche active.</ion-text>
 
-      <!-- Formulaire d'ajout de tâche (simple modal) -->
+      <!-- Formulaire d'ajout de tâche -->
       <ion-modal :is-open="showAddTask" @didDismiss="showAddTask = false">
         <ion-header>
           <ion-toolbar color="primary">
@@ -51,7 +51,7 @@
         </ion-content>
       </ion-modal>
 
-      <!-- Formulaire de modification de tâche (modal) -->
+      <!-- Formulaire de modification de tâche CORRIGÉ -->
       <ion-modal :is-open="showEditTask" @didDismiss="closeEditTask">
         <ion-header>
           <ion-toolbar color="primary">
@@ -71,11 +71,21 @@
               <ion-label position="floating">Description</ion-label>
               <ion-input v-model="editDescription" required></ion-input>
             </ion-item>
+            
+            <!-- Correction du checkbox -->
             <ion-item>
               <ion-label>Terminée ?</ion-label>
-              <ion-checkbox v-model="editIsDone"></ion-checkbox>
+              <ion-checkbox 
+                :checked="editIsDone" 
+                @ionChange="editIsDone = $event.detail.checked"
+              ></ion-checkbox>
             </ion-item>
-            <ion-button expand="block" type="submit" class="ion-margin-top">Enregistrer</ion-button>
+            
+            <ion-text>Valeur checkbox : {{ editIsDone }}</ion-text>
+            
+            <ion-button expand="block" type="submit" class="ion-margin-top">
+              Enregistrer
+            </ion-button>
           </form>
         </ion-content>
       </ion-modal>
@@ -85,7 +95,11 @@
 
 <script setup>
 // Importation des composants Ionic
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonText, IonModal, IonItem, IonLabel, IonInput, IonButtons } from '@ionic/vue';
+import { 
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
+  IonButton, IonText, IonModal, IonItem, IonLabel, 
+  IonInput, IonButtons, IonCheckbox 
+} from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
 import api from '@/services/api';
 import { state } from '@/store/state';
@@ -121,7 +135,7 @@ async function loadTasks() {
     // Tri des tâches par date décroissante
     state.tasks = response.data.tasks.sort((a, b) => new Date(b.date) - new Date(a.date));
   } catch (e) {
-    // Gérer l'erreur (ex: afficher un message)
+    console.error('Erreur loadTasks:', e);
   }
 }
 
@@ -137,9 +151,9 @@ async function addTask() {
     showAddTask.value = false;
     newTitle.value = '';
     newDescription.value = '';
-    await loadTasks(); // Rafraîchir la liste
+    await loadTasks();
   } catch (e) {
-    // Gérer l'erreur
+    console.error('Erreur addTask:', e);
   }
 }
 
@@ -164,17 +178,20 @@ function closeEditTask() {
 // Mettre à jour la tâche
 async function updateTask() {
   try {
-    await api.updateTask({
+    const data = {
       userId: state.user.userId,
       taskId: editTaskId.value,
       title: editTitle.value,
       description: editDescription.value,
-      isDone: editIsDone.value
-    });
+      isDone: editIsDone.value  // Utilisation directe de la valeur booléenne
+    };
+    
+    console.log('Données envoyées à updateTask:', data);
+    await api.updateTask(data);
     closeEditTask();
     await loadTasks();
   } catch (e) {
-    // Gérer l'erreur
+    console.error('Erreur updateTask:', e);
   }
 }
 
@@ -185,7 +202,7 @@ async function deleteTask(task) {
     await api.removeTask({ userId: state.user.userId, taskId: task.taskId });
     await loadTasks();
   } catch (e) {
-    // Gérer l'erreur
+    console.error('Erreur deleteTask:', e);
   }
 }
 

@@ -58,7 +58,7 @@ async function loginUser() {
     // Stockage de l'utilisateur connecté dans l'état global
     state.user = response.data;
     // Redirection vers la page principale (onglets)
-    router.push('/tabs');
+    router.push('/mytasks');
   } catch (error) {
     // Gestion des erreurs (mauvais identifiants, etc.)
     errorMessage.value = "Email ou mot de passe incorrect.";

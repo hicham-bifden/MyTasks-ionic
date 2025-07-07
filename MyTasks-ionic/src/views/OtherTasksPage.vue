@@ -12,7 +12,7 @@
           v-for="task in otherTasks"
           :key="task.taskId"
           :task="task"
-          :showOwner="true"  <!-- Affiche le nom du propriétaire -->
+          :showOwner="true"   
         />
       </div>
       <ion-text v-else color="medium">Aucune tâche active d'autres utilisateurs.</ion-text>
