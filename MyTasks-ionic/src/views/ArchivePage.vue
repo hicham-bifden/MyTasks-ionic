@@ -14,7 +14,12 @@
           :task="task"
           :showOwner="true"
           @delete="deleteTask"
-        />
+        >
+          <template #actions v-if="task.isOwner">
+            <ion-button size="small" color="success" @click="restoreTask(task)">Restaurer</ion-button>
+            <ion-button size="small" color="danger" @click="$emit('delete', task)">Supprimer</ion-button>
+          </template>
+        </TaskItem>
       </div>
       <ion-text v-else color="medium">Aucune tâche archivée.</ion-text>
     </ion-content>
@@ -54,6 +59,21 @@ async function deleteTask(task) {
     await loadTasks();
   } catch (e) {
     console.error('Erreur deleteTask:', e);
+  }
+}
+
+async function restoreTask(task) {
+  try {
+    await api.updateTask({
+      userId: state.user.userId,
+      taskId: task.taskId,
+      title: task.title,
+      description: task.description,
+      isDone: false
+    });
+    await loadTasks();
+  } catch (e) {
+    console.error('Erreur restoreTask:', e);
   }
 }
 </script>
