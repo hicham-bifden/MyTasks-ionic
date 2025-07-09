@@ -2,16 +2,21 @@
   <ion-page>
     <ion-header>
       <ion-toolbar color="primary">
-        <ion-title>Mes tâches</ion-title>
+        <ion-title>
+          <ion-icon name="list-outline" style="margin-right:8px;" />
+          Mes tâches
+        </ion-title>
         <!-- Bouton de déconnexion à droite -->
         <ion-buttons slot="end">
           <ion-button @click="logout">Déconnexion</ion-button>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
-    <ion-content class="ion-padding">
+    <ion-content class="ion-padding fade-in">
       <!-- Bouton pour ajouter une nouvelle tâche -->
-      <ion-button expand="block" @click="showAddTask = true" class="ion-margin-bottom">Ajouter une tâche</ion-button>
+      <ion-button expand="block" color="success" @click="showAddTask = true" class="ion-margin-bottom">
+        <ion-icon slot="start" name="add-circle-outline" /> Ajouter une tâche
+      </ion-button>
 
       <!-- Liste des tâches actives de l'utilisateur connecté -->
       <div v-if="myTasks.length > 0">
@@ -98,13 +103,15 @@
 import { 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
   IonButton, IonText, IonModal, IonItem, IonLabel, 
-  IonInput, IonButtons, IonCheckbox 
+  IonInput, IonButtons, IonCheckbox, IonIcon 
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
 import api from '@/services/api';
 import { state } from '@/store/state';
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+
+
 
 // Variables pour le formulaire d'ajout
 const showAddTask = ref(false);
@@ -218,5 +225,18 @@ function logout() {
 ion-content {
   display: flex;
   flex-direction: column;
+}
+
+.fade-in {
+  animation: fadeIn 1.1s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 </style>

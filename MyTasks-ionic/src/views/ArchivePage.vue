@@ -1,11 +1,14 @@
 <template>
   <ion-page>
     <ion-header>
-      <ion-toolbar color="primary">
-        <ion-title>Archivées</ion-title>
+      <ion-toolbar color="warning">
+        <ion-title>
+          <ion-icon name="archive-outline" style="margin-right:8px;" />
+          Archivées
+        </ion-title>
       </ion-toolbar>
     </ion-header>
-    <ion-content class="ion-padding">
+    <ion-content class="ion-padding fade-in">
       <!-- Liste des tâches archivées (toutes, tous utilisateurs) -->
       <div v-if="archivedTasks.length > 0">
         <TaskItem

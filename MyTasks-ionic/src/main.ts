@@ -20,6 +20,21 @@ import '@ionic/vue/css/text-transformation.css';
 import '@ionic/vue/css/flex-utils.css';
 import '@ionic/vue/css/display.css';
 
+
+
+import { addIcons } from 'ionicons';
+ 
+import { addCircleOutline, listOutline, checkmarkDoneOutline, timeOutline } from 'ionicons/icons';
+
+addIcons({
+  'add-circle-outline': addCircleOutline,
+  'list-outline': listOutline,
+  'checkmark-done-outline': checkmarkDoneOutline,
+  'time-outline': timeOutline,
+});
+
+
+
 /**
  * Ionic Dark Mode
  * -----------------------------------------------------

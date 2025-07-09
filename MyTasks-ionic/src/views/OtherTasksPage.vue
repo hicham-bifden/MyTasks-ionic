@@ -1,11 +1,14 @@
 <template>
   <ion-page>
     <ion-header>
-      <ion-toolbar color="primary">
-        <ion-title>Autres</ion-title>
+      <ion-toolbar color="tertiary">
+        <ion-title>
+          <ion-icon name="people-outline" style="margin-right:8px;" />
+          Autres
+        </ion-title>
       </ion-toolbar>
     </ion-header>
-    <ion-content class="ion-padding">
+    <ion-content class="ion-padding fade-in">
       <!-- Liste des tâches actives des autres utilisateurs -->
       <div v-if="otherTasks.length > 0">
         <TaskItem

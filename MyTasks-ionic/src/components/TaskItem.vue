@@ -1,41 +1,38 @@
 <template>
-  <ion-card>
+  <ion-card class="fade-in">
     <ion-card-header>
-      <!-- Affichage du titre de la tâche -->
-      <ion-card-title>{{ task.title }}</ion-card-title>
-      <!-- Affichage du prénom et nom du propriétaire si showOwner est vrai -->
+      <ion-card-title>
+        <ion-icon name="document-text-outline" style="margin-right:6px; color:#3880ff;" />
+        {{ task.title }}
+      </ion-card-title>
       <ion-card-subtitle v-if="showOwner">Par {{ task.firstName }} {{ task.lastName }}</ion-card-subtitle>
     </ion-card-header>
     <ion-card-content>
-      <!-- Description de la tâche -->
       <p>{{ task.description }}</p>
-      <!-- Date de création -->
       <p><strong>Date :</strong> {{ formatDate(task.date) }}</p>
-      <!-- État de la tâche -->
       <ion-badge :color="task.isDone ? 'success' : 'warning'">
+        <ion-icon :name="task.isDone ? 'checkmark-done-outline' : 'time-outline'" style="margin-right:4px;" />
         {{ task.isDone ? 'Terminée' : 'Active' }}
       </ion-badge>
-      <!-- Boutons d'action si l'utilisateur est propriétaire -->
       <div v-if="task.isOwner" class="actions">
-        <ion-button size="small" color="primary" @click="$emit('edit', task)">Modifier</ion-button>
-        <ion-button size="small" color="danger" @click="$emit('delete', task)">Supprimer</ion-button>
+        <ion-button size="small" color="primary" @click="$emit('edit', task)">
+          <ion-icon slot="start" name="create-outline" /> Modifier
+        </ion-button>
+        <ion-button size="small" color="danger" @click="$emit('delete', task)">
+          <ion-icon slot="start" name="trash-outline" /> Supprimer
+        </ion-button>
       </div>
     </ion-card-content>
   </ion-card>
 </template>
 
 <script setup>
-// Importation des composants Ionic
-import { IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent, IonBadge, IonButton } from '@ionic/vue';
+import { IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent, IonBadge, IonButton, IonIcon } from '@ionic/vue';
 import { defineProps } from 'vue';
-
-// Définition des props reçues par le composant
 const props = defineProps({
-  task: { type: Object, required: true }, // La tâche à afficher
-  showOwner: { type: Boolean, default: false } // Afficher le nom du propriétaire ?
+  task: { type: Object, required: true },
+  showOwner: { type: Boolean, default: false }
 });
-
-// Fonction utilitaire pour formater la date
 function formatDate(dateStr) {
   const date = new Date(dateStr);
   return date.toLocaleString();
@@ -43,9 +40,23 @@ function formatDate(dateStr) {
 </script>
 
 <style scoped>
+.fade-in {
+  animation: fadeIn 0.7s;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .actions {
   margin-top: 10px;
   display: flex;
   gap: 10px;
+}
+ion-button {
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+ion-button:hover {
+  box-shadow: 0 2px 8px #38ffaf33;
+  transform: translateY(-2px) scale(1.04);
 }
 </style> 
