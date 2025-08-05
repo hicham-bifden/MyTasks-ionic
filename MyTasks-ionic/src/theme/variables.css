@@ -1,2 +1,7 @@
 /* For information on how to create your own theme, please see:
 http://ionicframework.com/docs/theming/ */
+ion-button {
+  --background: #05530d; /* couleur de fond du bouton */
+  --color: white;         /* couleur du texte */
+  --border-radius: 8px;   /* arrondi si tu veux */
+}

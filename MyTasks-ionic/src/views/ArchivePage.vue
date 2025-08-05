@@ -37,6 +37,8 @@ import { state } from '@/store/state';
 import { computed } from 'vue';
 import api from '@/services/api';
 
+ 
+
 // Filtrer toutes les tâches archivées (isDone = true)
 const archivedTasks = computed(() =>
   state.tasks.filter(task => task.isDone)
