@@ -9,7 +9,8 @@
         <!-- Bouton de déconnexion à droite -->
         <ion-buttons slot="end">
           <ion-button @click="logout">Déconnexionn
-            <template v-if="state.user">({{ state.user.uid }})</template>
+            
+             
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -23,7 +24,7 @@
       <!-- Liste des tâches actives de l'utilisateur connecté -->
       <div v-if="myTasks.length > 0">
         <TaskItem
-          v-for="task in myTasks"
+          v-for="task in state.tasks"
           :key="task.taskId"
           :task="task"
           :showOwner="false"
@@ -131,13 +132,17 @@ const editIsDone = ref(false);
 
 // Filtrer les tâches actives appartenant à l'utilisateur connecté
 const myTasks = computed(() =>
-  state.tasks.filter(task => task.isOwner && !task.isDone)
+  state.tasks.filter(task => task.userId === state.user?.uid)
 );
 
 // Charger les tâches à l'ouverture de la page
 onMounted(loadTasks);
 
 const router = useRouter();
+
+
+//console.log('state.user:', state.user);
+
 
 async function loadTasks() {
   if (!state.user) return;

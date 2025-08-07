@@ -57,6 +57,7 @@ async function loginUser() {
     const response = await api.login({ email: email.value, password: password.value });
     // Stockage de l'utilisateur connecté dans l'état global
     state.user = response.user;
+    console.log('Utilisateur connecté:', state.user, response);
     // Redirection vers la page principale (onglets)
     router.push('/mytasks');
   } catch (error) {
