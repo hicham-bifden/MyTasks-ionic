@@ -32,8 +32,8 @@
 <script setup>
 // Importation des composants Ionic
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonText } from '@ionic/vue';
-// Importation de l'API et de l'état global
-import api from '@/services/api';
+// Importation du service Firebase et de l'état global
+import api from '@/services/firebase';
 import { state } from '@/store/state';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -53,10 +53,10 @@ async function loginUser() {
     return;
   }
   try {
-    // Appel à l'API pour se connecter
+    // Appel à Firebase pour se connecter
     const response = await api.login({ email: email.value, password: password.value });
     // Stockage de l'utilisateur connecté dans l'état global
-    state.user = response.data;
+    state.user = response.user;
     // Redirection vers la page principale (onglets)
     router.push('/mytasks');
   } catch (error) {
@@ -69,6 +69,9 @@ async function loginUser() {
 function goToRegister() {
   router.push('/register');
 }
+
+
+
 </script>
 
 <style scoped>

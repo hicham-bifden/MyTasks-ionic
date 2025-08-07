@@ -35,7 +35,7 @@ import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonText } from '@
 import TaskItem from '../components/TaskItem.vue';
 import { state } from '@/store/state';
 import { computed } from 'vue';
-import api from '@/services/api';
+import api from '@/services/firebase';
 
  
 
@@ -47,9 +47,9 @@ const archivedTasks = computed(() =>
 async function loadTasks() {
   if (!state.user) return;
   try {
-    const response = await api.getTasks(state.user.userId);
+    const response = await api.getTasks(state.user.uid);
     // Tri des tâches par date décroissante
-    state.tasks = response.data.tasks.sort((a, b) => new Date(b.date) - new Date(a.date));
+    state.tasks = response.tasks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   } catch (e) {
     console.error('Erreur loadTasks:', e);
   }
@@ -60,7 +60,7 @@ async function loadTasks() {
 async function deleteTask(task) {
   if (!confirm('Supprimer cette tâche ?')) return;
   try {
-    await api.removeTask({ userId: state.user.userId, taskId: task.taskId });
+    await api.removeTask(task.id);
     await loadTasks();
   } catch (e) {
     console.error('Erreur deleteTask:', e);
@@ -70,8 +70,8 @@ async function deleteTask(task) {
 async function restoreTask(task) {
   try {
     await api.updateTask({
-      userId: state.user.userId,
-      taskId: task.taskId,
+      id: task.id,
+      userId: state.user.uid,
       title: task.title,
       description: task.description,
       isDone: false
