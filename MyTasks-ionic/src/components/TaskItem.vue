@@ -9,7 +9,8 @@
     </ion-card-header>
     <ion-card-content>
       <p>{{ task.description }}</p>
-      <p><strong>Date :</strong> {{ formatDate(task.date) }}</p>
+     <p><strong>Date :</strong> {{ task.createdAt ? task.createdAt.toDate().toLocaleString() : 'Pas de date' }}</p>
+
       <ion-badge :color="task.isDone ? 'success' : 'warning'">
         <ion-icon :name="task.isDone ? 'checkmark-done-outline' : 'time-outline'" style="margin-right:4px;" />
         {{ task.isDone ? 'Terminée' : 'Active' }}
