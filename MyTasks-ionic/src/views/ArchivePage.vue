@@ -8,19 +8,18 @@
         </ion-title>
       </ion-toolbar>
     </ion-header>
+
     <ion-content class="ion-padding fade-in">
-      <!-- Liste des tâches archivées (toutes, tous utilisateurs) -->
       <div v-if="archivedTasks.length > 0">
         <TaskItem
           v-for="task in archivedTasks"
-          :key="task.taskId"
+          :key="task.id"
           :task="task"
           :showOwner="true"
-          @delete="deleteTask"
         >
           <template #actions v-if="task.isOwner">
             <ion-button size="small" color="success" @click="restoreTask(task)">Restaurer</ion-button>
-            <ion-button size="small" color="danger" @click="$emit('delete', task)">Supprimer</ion-button>
+            <ion-button size="small" color="danger" @click="deleteTask(task)">Supprimer</ion-button>
           </template>
         </TaskItem>
       </div>
@@ -30,55 +29,39 @@
 </template>
 
 <script setup>
-// Importation des composants Ionic
-import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonText } from '@ionic/vue';
-import TaskItem from '../components/TaskItem.vue';
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle,
+  IonContent, IonText, IonButton, IonIcon
+} from '@ionic/vue';
+import TaskItem from '@/components/TaskItem.vue';
 import { state } from '@/store/state';
 import { computed } from 'vue';
-import api from '@/services/firebase';
+import { firebaseService } from '@/firebase';
 
- 
-
-// Filtrer toutes les tâches archivées (isDone = true)
 const archivedTasks = computed(() =>
   state.tasks.filter(task => task.isDone)
 );
 
-async function loadTasks() {
-  if (!state.user) return;
-  try {
-    const response = await api.getTasks(state.user.uid);
-    // Tri des tâches par date décroissante
-    state.tasks = response.tasks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  } catch (e) {
-    console.error('Erreur loadTasks:', e);
-  }
-}
-
-
-// Supprimer une tâche
-async function deleteTask(task) {
-  if (!confirm('Supprimer cette tâche ?')) return;
-  try {
-    await api.removeTask(task.id);
-    await loadTasks();
-  } catch (e) {
-    console.error('Erreur deleteTask:', e);
-  }
-}
-
 async function restoreTask(task) {
   try {
-    await api.updateTask({
+    await firebaseService.updateTask({
       id: task.id,
-      userId: state.user.uid,
+      userId: task.userId,
       title: task.title,
       description: task.description,
       isDone: false
     });
-    await loadTasks();
   } catch (e) {
     console.error('Erreur restoreTask:', e);
+  }
+}
+
+async function deleteTask(task) {
+  if (!confirm('Supprimer cette tâche ?')) return;
+  try {
+    await firebaseService.removeTask(task.id);
+  } catch (e) {
+    console.error('Erreur deleteTask:', e);
   }
 }
 </script>
@@ -87,5 +70,12 @@ async function restoreTask(task) {
 ion-content {
   display: flex;
   flex-direction: column;
+}
+.fade-in {
+  animation: fadeIn 1s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>

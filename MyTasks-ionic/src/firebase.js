@@ -1,8 +1,24 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where } from "firebase/firestore";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
+} from "firebase/auth";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  where,
+  Timestamp // ✅ Import du Timestamp
+} from "firebase/firestore";
 
+// 🔥 Configuration Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyA1W_JIGlQDqUdw26h6MHXQPIZzdtYisl8",
   authDomain: "bifden.firebaseapp.com",
@@ -16,100 +32,82 @@ const firebaseConfig = {
 // 🔥 Initialise Firebase
 const app = initializeApp(firebaseConfig);
 
-// ✅ Exporte l'auth Firebase
+// ✅ Authentification
 export const auth = getAuth(app);
 
-// 🔥 Initialise Firestore
+// ✅ Firestore
 export const db = getFirestore(app);
 
-// 📝 Noms des collections Firestore
+// 📁 Collections
 const COLLECTIONS = {
   USERS: "utilisateurs",
   TASKS: "tasks"
 };
 
-// 📝 Service Firebase pour remplacer l'API
+// 🧠 Service Firebase
 export const firebaseService = {
-  // Inscription
+  // 🔐 Inscription
   async register(user) {
-    try {
-      // Créer l'utilisateur dans Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
-      
-      // Ajouter les informations utilisateur dans Firestore
-      await addDoc(collection(db, COLLECTIONS.USERS), {
-        uid: userCredential.user.uid,
-        email: user.email,
-        name: user.name,
-        createdAt: new Date()
-      });
-      
-      return { success: true, user: userCredential.user };
-    } catch (error) {
-      throw error;
-    }
+    const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
+    await addDoc(collection(db, COLLECTIONS.USERS), {
+      uid: userCredential.user.uid,
+      email: user.email,
+      name: user.name,
+      createdAt: Timestamp.now() // ✅ Correction ici
+    });
+    return { success: true, user: userCredential.user };
   },
 
-  // Connexion
+  // 🔐 Connexion
   async login(credentials) {
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
-      return { success: true, user: userCredential.user };
-    } catch (error) {
-      throw error;
-    }
+    const userCredential = await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
+    return { success: true, user: userCredential.user };
   },
 
-  // Ajouter une tâche
+  // ➕ Ajouter une tâche
   async addTask(task) {
-    try {
-      const docRef = await addDoc(collection(db, COLLECTIONS.TASKS), {
-        ...task,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      return { success: true, id: docRef.id };
-    } catch (error) {
-      throw error;
-    }
+    const docRef = await addDoc(collection(db, COLLECTIONS.TASKS), {
+      ...task,
+      createdAt: Timestamp.now(), // ✅ Correction ici
+      updatedAt: Timestamp.now()  // ✅ Correction ici
+    });
+    return { success: true, id: docRef.id };
   },
 
-  // Récupérer les tâches d'un utilisateur
+  // 📥 Récupérer les tâches d'un utilisateur
   async getTasks(userId) {
-    try {
-      const q = query(collection(db, COLLECTIONS.TASKS), where("userId", "==", userId));
-      const querySnapshot = await getDocs(q);
-      const tasks = [];
-      querySnapshot.forEach((doc) => {
-        tasks.push({ id: doc.id, ...doc.data() });
-      });
-      return { success: true, tasks };
-    } catch (error) {
-      throw error;
-    }
+    const q = query(collection(db, COLLECTIONS.TASKS), where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+    const tasks = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    return { success: true, tasks };
   },
 
-  // Mettre à jour une tâche
+  // 🌍 Récupérer toutes les tâches (admin ou vue globale)
+  async getAllTasks() {
+    const snapshot = await getDocs(collection(db, COLLECTIONS.TASKS));
+    const tasks = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    return { success: true, tasks };
+  },
+
+  // ✏️ Mettre à jour une tâche
   async updateTask(task) {
-    try {
-      const taskRef = doc(db, COLLECTIONS.TASKS, task.id);
-      await updateDoc(taskRef, {
-        ...task,
-        updatedAt: new Date()
-      });
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
+    const taskRef = doc(db, COLLECTIONS.TASKS, task.id);
+    await updateDoc(taskRef, {
+      ...task,
+      updatedAt: Timestamp.now() // ✅ Correction ici
+    });
+    return { success: true };
   },
 
-  // Supprimer une tâche
+  // ❌ Supprimer une tâche
   async removeTask(taskId) {
-    try {
-      await deleteDoc(doc(db, COLLECTIONS.TASKS, taskId));
-      return { success: true };
-    } catch (error) {
-      throw error;
-    }
+    await deleteDoc(doc(db, COLLECTIONS.TASKS, taskId));
+    return { success: true };
   }
 };
