@@ -1,10 +1,9 @@
-<!-- src/components/TaskItem.vue -->
 <template>
   <ion-card>
     <ion-card-header>
       <ion-card-title>{{ task.title }}</ion-card-title>
       <ion-card-subtitle>
-        Créée le {{ formattedDate }}
+        Date : {{ formattedDate }}
         <span v-if="showOwner"> • Par: {{ task.userId }}</span>
       </ion-card-subtitle>
     </ion-card-header>
@@ -40,14 +39,36 @@ defineProps({
   }
 });
 
-// ✅ Formatage de la date en temps réel
+// ✅ Formatage robuste de la date
 const formattedDate = computed(() => {
-  if (!task.createdAt) return 'Date inconnue';
+  const raw = task.createdAt;
 
-  // Si c'est un Timestamp Firebase, on utilise .toDate()
-  const dateObj = task.createdAt.toDate ? task.createdAt.toDate() : new Date(task.createdAt);
+  if (!raw) return 'Date inconnue';
 
-  return dateObj.toLocaleString('fr-FR', {
+  let date;
+
+  // 🔍 Si c'est un Timestamp Firebase
+  if (typeof raw.toDate === 'function') {
+    date = raw.toDate();
+  }
+  // 🔍 Si c'est une chaîne ISO
+  else if (typeof raw === 'string') {
+    date = new Date(raw);
+  }
+  // 🔍 Si c'est déjà un objet Date
+  else if (raw instanceof Date) {
+    date = raw;
+  }
+  // 🔍 Si c'est un objet avec seconds/nanoseconds (structure brute Firebase)
+  else if (raw.seconds) {
+    date = new Date(raw.seconds * 1000);
+  }
+  else {
+    return 'Format de date non reconnu';
+  }
+
+  // ✅ Format lisible
+  return date.toLocaleString('fr-FR', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
