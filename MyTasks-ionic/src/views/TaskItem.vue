@@ -3,13 +3,17 @@
     <ion-card-header>
       <ion-card-title>{{ task.title }}</ion-card-title>
       <ion-card-subtitle>
-        Date : {{ formattedDate }}
-        <span v-if="showOwner"> • Par: {{ task.userId }}</span>
+        <span v-if="showOwner">Par: {{ task.userId }}</span>
       </ion-card-subtitle>
     </ion-card-header>
 
     <ion-card-content>
       {{ task.description }}
+    </ion-card-content>
+
+    <!-- ✅ Affichage de la date dans un paragraphe -->
+    <ion-card-content>
+      <p><strong>Date :</strong> {{ formattedDate }}</p>
     </ion-card-content>
 
     <ion-card-content>
@@ -43,39 +47,35 @@ defineProps({
 const formattedDate = computed(() => {
   const raw = task.createdAt;
 
-  if (!raw) return 'Date inconnue';
+  if (!raw) return 'Pas de date';
 
   let date;
 
-  // 🔍 Si c'est un Timestamp Firebase
-  if (typeof raw.toDate === 'function') {
-    date = raw.toDate();
-  }
-  // 🔍 Si c'est une chaîne ISO
-  else if (typeof raw === 'string') {
-    date = new Date(raw);
-  }
-  // 🔍 Si c'est déjà un objet Date
-  else if (raw instanceof Date) {
-    date = raw;
-  }
-  // 🔍 Si c'est un objet avec seconds/nanoseconds (structure brute Firebase)
-  else if (raw.seconds) {
-    date = new Date(raw.seconds * 1000);
-  }
-  else {
-    return 'Format de date non reconnu';
-  }
+  try {
+    if (typeof raw.toDate === 'function') {
+      date = raw.toDate();
+    } else if (typeof raw === 'string') {
+      date = new Date(raw);
+    } else if (raw instanceof Date) {
+      date = raw;
+    } else if (raw.seconds) {
+      date = new Date(raw.seconds * 1000);
+    } else {
+      return 'Format de date non reconnu';
+    }
 
-  // ✅ Format lisible
-  return date.toLocaleString('fr-FR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+    return date.toLocaleString('fr-FR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    console.error('Erreur formatage date:', e);
+    return 'Date invalide';
+  }
 });
 </script>
 
@@ -83,5 +83,9 @@ const formattedDate = computed(() => {
 ion-card-subtitle {
   font-size: 0.9em;
   color: #666;
+}
+p {
+  margin: 0;
+  font-size: 0.95em;
 }
 </style>
