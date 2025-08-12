@@ -11,6 +11,7 @@
           <ion-button @click="logout">
             Déconnexion
             <template v-if="state.user">({{ state.user.uid }})</template>
+          <ion-button @click="logout">Déconnexionn
           </ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -33,6 +34,16 @@
           />
         </div>
         <ion-text v-else color="medium">Aucune tâche active.</ion-text>
+      <!-- Liste des tâches actives de l'utilisateur connecté -->
+      <div v-if="myTasks.length > 0">
+        <TaskItem
+          v-for="task in state.tasks"
+          :key="task.taskId"
+          :task="task"
+          :showOwner="false"
+          @edit="editTask"
+          @delete="deleteTask"
+        />
       </div>
 
       <!-- Modal ajout -->
@@ -115,13 +126,14 @@ const editDescription = ref('');
 const editIsDone = ref(false);
 
 const myTasks = computed(() =>
-  state.tasks.filter(task => task.isOwner && !task.isDone)
+  state.tasks.filter(task => task.userId === state.user?.uid && task.isDone)
 );
 
 const router = useRouter();
 
 onMounted(loadTasks);
 
+//console.log('state.user:', state.user);
 async function loadTasks() {
   try {
     const response = await firebaseService.getAllTasks();
