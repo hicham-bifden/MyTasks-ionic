@@ -1,0 +1,54 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Dependency directories
+node_modules/
+
+# Build output
+dist/
+build/
+www/
+
+# Ionic specific
+platforms/
+plugins/
+resources/
+.ionic/
+
+# Environment variables
+.env
+.env.*.local
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.tmp.*
+*.sw[mnpcod]
+*.lock
+coverage/
+temp/
+
+# Native project files (Capacitor)
+# While native project files are generally committed with Capacitor,
+# specific build output or temporary files within them should be ignored.
+# Example:
+# android/app/build/
+# ios/build/
+
+# Other common ignores
+package-lock.json # if using npm
+yarn.lock # if using yarn
+*.tgz
+stats.json

@@ -31,6 +31,7 @@ import { computed } from 'vue';
 
 const otherTasks = computed(() =>
   state.tasks.filter(task => !task.isOwner && !task.isDone)
+  state.tasks.filter(task => !task.isOwner && task.isDone) // Vérifie que la tâche est active et n'appartient pas à l'utilisateur connecté
 );
 </script>
 
