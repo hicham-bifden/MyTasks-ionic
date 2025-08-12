@@ -132,7 +132,7 @@ const editIsDone = ref(false);
 
 // Filtrer les tâches actives appartenant à l'utilisateur connecté
 const myTasks = computed(() =>
-  state.tasks.filter(task => task.userId === state.user?.uid)
+  state.tasks.filter(task => task.userId === state.user?.uid && task.isDone)
 );
 
 // Charger les tâches à l'ouverture de la page

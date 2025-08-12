@@ -9,19 +9,20 @@
     </ion-card-header>
     <ion-card-content>
       <p>{{ task.description }}</p>
-      <p><strong>Date :</strong> {{ formatDate(task.date) }}</p>
+       <p><strong>Date :</strong> {{ task.createdAt ? task.createdAt.toDate().toLocaleString() : 'Pas de date' }}</p>
+    
       <ion-badge :color="task.isDone ? 'success' : 'warning'">
         <ion-icon :name="task.isDone ? 'checkmark-done-outline' : 'time-outline'" style="margin-right:4px;" />
         {{ task.isDone ? 'Terminée' : 'Active' }}
       </ion-badge>
-      <div v-if="task.isOwner" class="actions">
+       <div v-if="task" class="actions">
         <ion-button size="small" color="primary" @click="$emit('edit', task)">
           <ion-icon slot="start" name="create-outline" /> Modifier
         </ion-button>
         <ion-button size="small" color="danger" @click="$emit('delete', task)">
           <ion-icon slot="start" name="trash-outline" /> Supprimer
         </ion-button>
-      </div>
+      </div> 
     </ion-card-content>
   </ion-card>
 </template>
