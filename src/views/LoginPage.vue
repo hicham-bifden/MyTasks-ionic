@@ -33,7 +33,7 @@
 // Importation des composants Ionic
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonItem, IonLabel, IonInput, IonButton, IonText } from '@ionic/vue';
 // Importation du service Firebase et de l'état global
-import api from '@/services/firebase';
+import { firebaseService } from '@/firebase';
 import { state } from '@/store/state';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -54,7 +54,7 @@ async function loginUser() {
   }
   try {
     // Appel à Firebase pour se connecter
-    const response = await api.login({ email: email.value, password: password.value });
+    const response = await firebaseService.login({ email: email.value, password: password.value });
     // Stockage de l'utilisateur connecté dans l'état global
     state.user = response.user;
     console.log('Utilisateur connecté:', state.user, response);

@@ -28,7 +28,7 @@ import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonText, IonIcon 
 import TaskItem from '@/components/TaskItem.vue';
 import { state } from '@/store/state';
 import { computed, onMounted } from 'vue';
-import api from '@/services/firebase';
+import { firebaseService } from '@/firebase';
 
 // Tâches des autres utilisateurs
 const otherTasks = computed(() =>
@@ -39,7 +39,7 @@ const otherTasks = computed(() =>
 onMounted(async () => {
   if (state.user) {
     try {
-      const response = await api.getAllTasks();
+      const response = await firebaseService.getAllTasks();
       // Marquer les tâches comme appartenant ou non à l'utilisateur connecté
       state.tasks = response.tasks.map(task => ({
         ...task,

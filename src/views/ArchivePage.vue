@@ -36,7 +36,7 @@ import {
 import TaskItem from '@/components/TaskItem.vue';
 import { state } from '@/store/state';
 import { computed, onMounted } from 'vue';
-import api from '@/services/firebase';
+import { firebaseService } from '@/firebase';
 
 const archivedTasks = computed(() =>
   state.tasks.filter(task => task.isDone)
@@ -46,7 +46,7 @@ const archivedTasks = computed(() =>
 onMounted(async () => {
   if (state.user) {
     try {
-      const response = await api.getAllTasks();
+      const response = await firebaseService.getAllTasks();
       // Marquer les tâches comme appartenant ou non à l'utilisateur connecté
       state.tasks = response.tasks.map(task => ({
         ...task,
@@ -60,7 +60,7 @@ onMounted(async () => {
 
 async function restoreTask(task) {
   try {
-    await api.updateTask({
+    await firebaseService.updateTask({
       id: task.id,
       userId: task.userId,
       title: task.title,
@@ -68,7 +68,7 @@ async function restoreTask(task) {
       isDone: false
     });
     // Recharger les tâches après modification
-    const response = await api.getAllTasks();
+    const response = await firebaseService.getAllTasks();
     state.tasks = response.tasks.map(task => ({
       ...task,
       isOwner: task.userId === state.user.uid
@@ -81,9 +81,9 @@ async function restoreTask(task) {
 async function deleteTask(task) {
   if (!confirm('Supprimer cette tâche ?')) return;
   try {
-    await api.removeTask(task.id);
+    await firebaseService.removeTask(task.id);
     // Recharger les tâches après suppression
-    const response = await api.getAllTasks();
+    const response = await firebaseService.getAllTasks();
     state.tasks = response.tasks.map(task => ({
       ...task,
       isOwner: task.userId === state.user.uid

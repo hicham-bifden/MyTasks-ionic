@@ -241,7 +241,7 @@ async function loadTasks() {
   errorMessage.value = '';
   
   try {
-    const response = await api.getAllTasks();
+    const response = await firebaseService.getAllTasks();
     // Marquer les tâches comme appartenant ou non à l'utilisateur connecté
     state.tasks = response.tasks.map(task => ({
       ...task,
@@ -262,7 +262,7 @@ async function addTask() {
   errorMessage.value = '';
   
   try {
-    await api.addTask({
+    await firebaseService.addTask({
       userId: state.user.uid,
       title: newTitle.value,
       description: newDescription.value,
@@ -301,7 +301,7 @@ async function updateTask() {
   errorMessage.value = '';
   
   try {
-    await api.updateTask({
+    await firebaseService.updateTask({
       id: editTaskId.value,
       userId: state.user.uid,
       title: editTitle.value,
@@ -325,7 +325,7 @@ async function deleteTask(task) {
   errorMessage.value = '';
   
   try {
-    await api.removeTask(task.id);
+    await firebaseService.removeTask(task.id);
     await loadTasks();
   } catch (e) {
     console.error('Erreur deleteTask:', e);
