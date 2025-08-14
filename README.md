@@ -1,112 +1,227 @@
-# Application de Gestion de Tâches (Ionic + Vue.js)
+# 📱 MyTasks - Application de Gestion de Tâches
 
-## Présentation du projet
+Une application moderne de gestion de tâches construite avec **Ionic Vue** et **Firebase**, offrant une expérience utilisateur intuitive et des fonctionnalités avancées.
 
-Ce projet est une application web de gestion de tâches réalisée avec **Ionic** et **Vue.js**. Elle permet à chaque utilisateur de :
-- S'inscrire et se connecter à un compte personnel
-- Créer, modifier, supprimer ses propres tâches
-- Consulter les tâches des autres utilisateurs (lecture seule)
-- Voir toutes les tâches archivées (terminées)
+## ✨ Fonctionnalités
 
-L'application utilise une API REST fournie par l'enseignant pour la gestion des utilisateurs et des tâches.
+### 🔐 Authentification
+- **Inscription** : Création de compte avec email et mot de passe
+- **Connexion** : Authentification sécurisée
+- **Gestion de profil** : Stockage des informations utilisateur
 
----
+### 📋 Gestion des Tâches
+- **Création** : Ajout de nouvelles tâches avec titre et description
+- **Modification** : Édition des tâches existantes
+- **Suppression** : Suppression sécurisée des tâches
+- **Archivage** : Marquage des tâches comme terminées
 
-## Fonctionnalités principales
+### 🔍 Recherche et Filtrage
+- **Recherche** : Recherche par titre ou description
+- **Filtrage** : Filtrage par statut (toutes, actives, terminées)
+- **Tri** : Tri par date, titre ou statut (croissant/décroissant)
 
-- **Inscription** : Création d'un compte avec prénom, nom, email, mot de passe
-- **Connexion** : Accès sécurisé à l'application
-- **Onglets de navigation** :
-  - **Mes tâches** : Voir, ajouter, modifier, supprimer ses propres tâches actives
-  - **Autres** : Voir les tâches actives des autres utilisateurs (lecture seule)
-  - **Archivées** : Voir toutes les tâches terminées (lecture seule)
-- **Déconnexion** : Quitter la session en toute sécurité
+### 👥 Collaboration
+- **Vue personnelle** : Affichage de ses propres tâches
+- **Vue publique** : Consultation des tâches des autres utilisateurs
+- **Archives** : Accès aux tâches terminées
 
----
+## 🛠️ Technologies Utilisées
 
-## Structure du projet
+- **Frontend** : Ionic Vue 8 + Vue 3
+- **Backend** : Firebase (Firestore + Authentication)
+- **Base de données** : Firestore (NoSQL)
+- **Authentification** : Firebase Auth
+- **Build** : Vite + TypeScript
+- **Styling** : CSS avec composants Ionic
+
+## 🚀 Installation et Démarrage
+
+### Prérequis
+- Node.js 18+ 
+- npm ou yarn
+- Compte Firebase
+
+### 1. Cloner le projet
+```bash
+git clone <votre-repo>
+cd MyTasks-ionic
+```
+
+### 2. Installer les dépendances
+```bash
+npm install
+```
+
+### 3. Configuration Firebase
+1. Créer un projet Firebase
+2. Activer Authentication (Email/Password)
+3. Activer Firestore Database
+4. Copier la configuration dans `src/firebase.js`
+
+### 4. Lancer l'application
+```bash
+# Développement
+npm run dev
+
+# Build de production
+npm run build
+
+# Prévisualisation
+npm run preview
+```
+
+## 📁 Structure du Projet
 
 ```
-MyTasks-ionic/
-│
-├── src/
-│   ├── components/         # Composants réutilisables (TaskItem.vue)
-│   ├── models/             # Modèles de données (User.js, Task.js)
-│   ├── services/           # Appels API (api.js)
-│   ├── store/              # Gestion de l'état global (state.js)
-│   ├── views/              # Pages principales (Login, Register, Tabs, etc.)
-│   └── router/             # Configuration des routes
-│
-├── package.json            # Dépendances du projet
-└── README.md               # Ce fichier
+src/
+├── components/          # Composants réutilisables
+│   ├── TaskItem.vue    # Composant d'affichage des tâches
+│   └── TabsMenu.vue    # Menu de navigation
+├── models/             # Modèles de données
+│   ├── Task.js         # Modèle des tâches
+│   └── User.js         # Modèle des utilisateurs
+├── services/           # Services et API
+│   ├── firebase.js     # Service Firebase
+│   └── api.js          # Ancien service API (déprécié)
+├── store/              # État global
+│   └── state.js        # Store Vue réactif
+├── views/              # Pages de l'application
+│   ├── LoginPage.vue   # Page de connexion
+│   ├── RegisterPage.vue # Page d'inscription
+│   ├── MyTasksPage.vue # Mes tâches
+│   ├── OtherTasksPage.vue # Tâches des autres
+│   └── ArchivePage.vue # Tâches archivées
+└── firebase.js         # Configuration Firebase
 ```
 
+## 🔥 Configuration Firebase
+
+### Collections Firestore
+- **`utilisateurs`** : Informations des utilisateurs
+- **`tasks`** : Tâches des utilisateurs
+
+### Règles de Sécurité
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Utilisateurs peuvent lire/écrire leurs propres données
+    match /utilisateurs/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Utilisateurs peuvent lire/écrire leurs propres tâches
+    match /tasks/{taskId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // Permettre la lecture de toutes les tâches pour l'affichage public
+    match /tasks/{taskId} {
+      allow read: if request.auth != null;
+    }
+  }
+}
+```
+
+## 📱 Déploiement
+
+### Firebase Hosting
+```bash
+# Installer Firebase CLI
+npm install -g firebase-tools
+
+# Se connecter
+firebase login
+
+# Initialiser le projet
+firebase init hosting
+
+# Déployer
+firebase deploy
+```
+
+### Capacitor (Mobile)
+```bash
+# Ajouter les plateformes
+npx cap add android
+npx cap add ios
+
+# Synchroniser
+npx cap sync
+
+# Ouvrir dans l'IDE
+npx cap open android
+npx cap open ios
+```
+
+## 🧪 Tests
+
+```bash
+# Tests unitaires
+npm run test:unit
+
+# Tests E2E
+npm run test:e2e
+
+# Linting
+npm run lint
+```
+
+## 🔧 Scripts Disponibles
+
+- `npm run dev` - Serveur de développement
+- `npm run build` - Build de production
+- `npm run preview` - Prévisualisation du build
+- `npm run test:unit` - Tests unitaires
+- `npm run test:e2e` - Tests end-to-end
+- `npm run lint` - Vérification du code
+
+## 📊 Fonctionnalités Avancées
+
+### Recherche Intelligente
+- Recherche en temps réel
+- Filtrage par statut
+- Tri personnalisable
+
+### Interface Responsive
+- Design adaptatif
+- Animations fluides
+- Composants Ionic natifs
+
+### Gestion d'État
+- Store Vue réactif
+- Synchronisation Firebase
+- Gestion des erreurs
+
+## 🤝 Contribution
+
+1. Fork le projet
+2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
+3. Committer les changements (`git commit -m 'Add AmazingFeature'`)
+4. Pousser vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrir une Pull Request
+
+## 📝 Licence
+
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+## 🆘 Support
+
+Pour toute question ou problème :
+- Ouvrir une issue sur GitHub
+- Consulter la documentation Firebase
+- Vérifier la console de développement
+
+## 🎯 Roadmap
+
+- [ ] Notifications push
+- [ ] Synchronisation offline
+- [ ] Partage de tâches
+- [ ] Calendrier intégré
+- [ ] Thèmes personnalisables
+- [ ] Export des données
+- [ ] API REST publique
+
 ---
 
-## Explication du code (débutant)
-
-- **Composants Vue** : Chaque page ou élément réutilisable est un fichier `.vue` (template + script + style).
-- **API** : Les appels à l'API sont centralisés dans `src/services/api.js` avec Axios.
-- **État global** : L'utilisateur connecté et la liste des tâches sont stockés dans `src/store/state.js` (reactive Vue).
-- **Navigation** : Les routes sont définies dans `src/router/index.ts`.
-- **Commentaires** : Chaque fichier important est commenté pour expliquer chaque étape.
-
----
-
-## Fonctionnement des pages
-
-### 1. Connexion / Inscription
-- **LoginPage.vue** : Formulaire de connexion, vérification des champs, appel API, redirection vers les onglets.
-- **RegisterPage.vue** : Formulaire d'inscription, validation, appel API, message de succès ou d'erreur.
-
-### 2. Onglets (Tabs)
-- **TabsPage.vue** : Barre de navigation en bas avec 3 onglets : Mes tâches, Autres, Archivées.
-
-### 3. Mes tâches (Tab1Page.vue)
-- Affiche les tâches actives de l'utilisateur connecté.
-- Permet d'ajouter, modifier, supprimer une tâche.
-- Utilise le composant `TaskItem.vue` pour chaque tâche.
-- Formulaires simples et modaux pour l'ajout/modification.
-
-### 4. Autres (Tab2Page.vue)
-- Affiche les tâches actives des autres utilisateurs (lecture seule).
-- Affiche le nom et prénom du propriétaire de chaque tâche.
-
-### 5. Archivées (Tab3Page.vue)
-- Affiche toutes les tâches terminées (isDone = true), pour tous les utilisateurs.
-- Lecture seule, affiche le propriétaire.
-
-### 6. Déconnexion
-- Bouton dans la barre du haut de "Mes tâches" pour se déconnecter et revenir à la page de connexion.
-
----
-
-## Lancement du projet
-
-1. **Installer les dépendances**
-   ```bash
-   npm install
-   ```
-2. **Lancer le serveur de développement**
-   ```bash
-   ionic serve
-   ```
-3. **Ouvrir le navigateur** à l'adresse indiquée (généralement http://localhost:8100)
-
----
-
-## Conseils pour débutant
-- Lis les commentaires dans chaque fichier pour comprendre chaque étape.
-- Le code est volontairement simple, sans logique complexe.
-- N'hésite pas à modifier les styles ou les textes pour personnaliser l'application.
-
----
-
-## Auteur
-Projet réalisé pour le cours **Applications web multiplateformes** (420-726-AH) – Enseignant : Khalil Loghlam
-
----
-
-## API utilisée
-- Base URL : https://server-1-t93s.onrender.com
-- Documentation complète dans l'énoncé du projet (routes : /signup, /login, /add-task, /get-tasks/:userId, /update-task, /remove-task) 
+**Développé avec ❤️ par Hicham Bifden - 2025** 
