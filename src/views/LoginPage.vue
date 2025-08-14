@@ -59,7 +59,7 @@ async function loginUser() {
     state.user = response.user;
     console.log('Utilisateur connecté:', state.user, response);
     // Redirection vers la page principale (onglets)
-    router.push('/mytasks');
+    router.push('/tabs');
   } catch (error) {
     // Gestion des erreurs (mauvais identifiants, etc.)
     errorMessage.value = "Email ou mot de passe incorrect.";

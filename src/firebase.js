@@ -180,5 +180,30 @@ export const firebaseService = {
   async removeTask(taskId) {
     await deleteDoc(doc(db, COLLECTIONS.TASKS, taskId));
     return { success: true };
+  },
+
+  // 👤 Récupérer les informations d'un utilisateur
+  async getUserInfo(uid) {
+    try {
+      const userQuery = query(collection(db, COLLECTIONS.USERS), where("uid", "==", uid));
+      const userSnapshot = await getDocs(userQuery);
+      
+      if (!userSnapshot.empty) {
+        const userDoc = userSnapshot.docs[0];
+        const userData = userDoc.data();
+        const user = new User(
+          userData.uid,
+          userData.email,
+          userData.name,
+          userData.createdAt
+        );
+        return { success: true, user };
+      }
+      
+      return { success: false, error: 'Utilisateur non trouvé' };
+    } catch (error) {
+      console.error('Erreur getUserInfo:', error);
+      throw error;
+    }
   }
 };

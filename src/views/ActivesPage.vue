@@ -1,14 +1,12 @@
-<!-- src/pages/MyTasksPage.vue -->
 <template>
   <ion-page>
     <ion-header>
       <ion-toolbar color="primary">
         <ion-title>
-          <ion-icon name="list-outline" style="margin-right:8px;" />
-          Mes tâches
+          <ion-icon name="checkmark-circle-outline" style="margin-right:8px;" />
+          Tâches Actives
         </ion-title>
         <ion-buttons slot="end">
-          <template v-if="state.user"></template>
           <ion-button @click="logout">Déconnexion</ion-button>
         </ion-buttons>
       </ion-toolbar>
@@ -62,20 +60,21 @@
       <ion-card v-if="!isLoading" class="ion-margin-bottom">
         <ion-card-content>
           <ion-text color="medium">
-            {{ myTasks.length }} tâche{{ myTasks.length > 1 ? 's' : '' }} trouvée{{ myTasks.length > 1 ? 's' : '' }}
+            {{ activeTasks.length }} tâche{{ activeTasks.length > 1 ? 's' : '' }} active{{ activeTasks.length > 1 ? 's' : '' }}
           </ion-text>
         </ion-card-content>
       </ion-card>
 
-      <!-- Liste des tâches actives de l'utilisateur connecté -->
-      <div v-if="myTasks.length > 0" class="task-list">
+      <!-- Liste des tâches actives -->
+      <div v-if="activeTasks.length > 0" class="task-list">
         <TaskItem
-          v-for="task in myTasks"
+          v-for="task in activeTasks"
           :key="task.id"
           :task="task"
-          :showOwner="false"
+          :showOwner="true"
           @edit="editTask"
           @delete="deleteTask"
+          @close="closeTask"
         />
       </div>
       <ion-text v-else-if="!isLoading" color="medium">Aucune tâche active.</ion-text>
@@ -125,10 +124,6 @@
               <ion-label position="floating">Description</ion-label>
               <ion-input v-model="editDescription" required></ion-input>
             </ion-item>
-            <ion-item>
-              <ion-label>Terminée ?</ion-label>
-              <ion-checkbox :checked="editIsDone" @ionChange="editIsDone = $event.detail.checked"></ion-checkbox>
-            </ion-item>
             <ion-button expand="block" type="submit" class="ion-margin-top">Enregistrer</ion-button>
           </form>
         </ion-content>
@@ -141,7 +136,7 @@
 import { 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
   IonButton, IonText, IonModal, IonItem, IonLabel, 
-  IonInput, IonButtons, IonCheckbox, IonIcon, IonSpinner,
+  IonInput, IonButtons, IonIcon, IonSpinner,
   IonCard, IonCardContent
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
@@ -165,10 +160,13 @@ const showEditTask = ref(false);
 const editTaskId = ref(null);
 const editTitle = ref('');
 const editDescription = ref('');
-const editIsDone = ref(false);
 
-const myTasks = computed(() => {
-  let filteredTasks = state.tasks.filter(task => task.userId === state.user?.uid);
+// Tâches actives avec recherche et tri par date décroissante
+const activeTasks = computed(() => {
+  let filteredTasks = state.tasks.filter(task => 
+    task.userId === state.user?.uid && 
+    task.status === 'active'
+  );
   
   // Recherche par titre ou description
   if (searchTerm.value.trim()) {
@@ -179,11 +177,11 @@ const myTasks = computed(() => {
     );
   }
   
-  // Tri par date de création décroissante (selon les consignes)
+  // Tri par date de création décroissante
   filteredTasks.sort((a, b) => {
     const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
     const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-    return dateB - dateA; // Décroissant
+    return dateB - dateA;
   });
   
   return filteredTasks;
@@ -192,22 +190,18 @@ const myTasks = computed(() => {
 const router = useRouter();
 
 onMounted(() => {
-  // Vérifier l'état de l'authentification Firebase
   onAuthStateChanged(auth, (user) => {
     if (user) {
       console.log('Utilisateur authentifié:', user);
-      // L'utilisateur est connecté, charger ses tâches
       loadTasks();
     } else {
       console.log('Aucun utilisateur connecté');
-      // L'utilisateur n'est pas connecté, vider l'état
       state.user = null;
       state.tasks = [];
     }
   });
 });
 
-console.log('state.user:', state.user);
 async function loadTasks() {
   if (!auth.currentUser) return;
   
@@ -215,18 +209,16 @@ async function loadTasks() {
   errorMessage.value = '';
   
   try {
-    // Récupérer les informations utilisateur depuis Firestore
     const userResponse = await firebaseService.getUserInfo(auth.currentUser.uid);
     if (userResponse.success) {
       state.user = userResponse.user;
     }
     
     const response = await firebaseService.getAllTasks();
-    // Marquer les tâches comme appartenant ou non à l'utilisateur connecté
     state.tasks = response.tasks.map(task => ({
       ...task,
       isOwner: task.userId === auth.currentUser.uid
-    })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }));
   } catch (e) {
     console.error('Erreur loadTasks:', e);
     errorMessage.value = 'Erreur lors du chargement des tâches';
@@ -236,13 +228,11 @@ async function loadTasks() {
 }
 
 async function addTask() {
-  // Vérifier que l'utilisateur est connecté
   if (!state.user || !state.user.uid) {
     errorMessage.value = 'Vous devez être connecté pour ajouter une tâche';
     return;
   }
   
-  // Vérifier que les champs sont remplis
   if (!newTitle.value || !newDescription.value) {
     errorMessage.value = 'Veuillez remplir tous les champs';
     return;
@@ -256,7 +246,7 @@ async function addTask() {
       userId: state.user.uid,
       title: newTitle.value,
       description: newDescription.value,
-      isDone: false
+      status: 'active'
     });
     showAddTask.value = false;
     newTitle.value = '';
@@ -274,7 +264,6 @@ function editTask(task) {
   editTaskId.value = task.id;
   editTitle.value = task.title;
   editDescription.value = task.description;
-  editIsDone.value = task.isDone;
   showEditTask.value = true;
 }
 
@@ -283,11 +272,9 @@ function closeEditTask() {
   editTaskId.value = null;
   editTitle.value = '';
   editDescription.value = '';
-  editIsDone.value = false;
 }
 
 async function updateTask() {
-  // Vérifier que l'utilisateur est connecté
   if (!state.user || !state.user.uid) {
     errorMessage.value = 'Vous devez être connecté pour modifier une tâche';
     return;
@@ -302,7 +289,7 @@ async function updateTask() {
       userId: state.user.uid,
       title: editTitle.value,
       description: editDescription.value,
-      isDone: editIsDone.value
+      status: 'active'
     });
     closeEditTask();
     await loadTasks();
@@ -326,6 +313,29 @@ async function deleteTask(task) {
   } catch (e) {
     console.error('Erreur deleteTask:', e);
     errorMessage.value = 'Erreur lors de la suppression de la tâche';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function closeTask(task) {
+  if (!confirm('Marquer cette tâche comme fermée ?')) return;
+  
+  isLoading.value = true;
+  errorMessage.value = '';
+  
+  try {
+    await firebaseService.updateTask({
+      id: task.id,
+      userId: task.userId,
+      title: task.title,
+      description: task.description,
+      status: 'fermee'
+    });
+    await loadTasks();
+  } catch (e) {
+    console.error('Erreur closeTask:', e);
+    errorMessage.value = 'Erreur lors de la fermeture de la tâche';
   } finally {
     isLoading.value = false;
   }
