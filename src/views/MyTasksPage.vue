@@ -19,6 +19,46 @@
         <ion-icon slot="start" name="add-circle-outline" /> Ajouter une tâche
       </ion-button>
 
+      <!-- Barre de recherche et filtres -->
+      <ion-card class="ion-margin-bottom">
+        <ion-card-content>
+          <ion-item>
+            <ion-label position="stacked">Rechercher</ion-label>
+            <ion-input 
+              v-model="searchTerm" 
+              placeholder="Titre ou description..."
+              clear-input
+            ></ion-input>
+          </ion-item>
+          
+          <ion-item>
+            <ion-label position="stacked">Filtrer par statut</ion-label>
+            <ion-select v-model="filterStatus" interface="popover">
+              <ion-select-option value="all">Toutes</ion-select-option>
+              <ion-select-option value="active">Actives</ion-select-option>
+              <ion-select-option value="completed">Terminées</ion-select-option>
+            </ion-select>
+          </ion-item>
+          
+          <ion-item>
+            <ion-label position="stacked">Trier par</ion-label>
+            <ion-select v-model="sortBy" interface="popover">
+              <ion-select-option value="createdAt">Date de création</ion-select-option>
+              <ion-select-option value="title">Titre</ion-select-option>
+              <ion-select-option value="isDone">Statut</ion-select-option>
+            </ion-select>
+          </ion-item>
+          
+          <ion-item>
+            <ion-label position="stacked">Ordre</ion-label>
+            <ion-select v-model="sortOrder" interface="popover">
+              <ion-select-option value="desc">Décroissant</ion-select-option>
+              <ion-select-option value="asc">Croissant</ion-select-option>
+            </ion-select>
+          </ion-item>
+        </ion-card-content>
+      </ion-card>
+
       <!-- Message d'erreur -->
       <ion-text v-if="errorMessage" color="danger" class="ion-margin-bottom">
         {{ errorMessage }}
@@ -26,6 +66,18 @@
 
       <!-- Indicateur de chargement -->
       <ion-spinner v-if="isLoading" name="crescent" class="ion-margin"></ion-spinner>
+
+      <!-- Compteur de tâches -->
+      <ion-card v-if="!isLoading" class="ion-margin-bottom">
+        <ion-card-content>
+          <ion-text color="medium">
+            {{ myTasks.length }} tâche{{ myTasks.length > 1 ? 's' : '' }} trouvée{{ myTasks.length > 1 ? 's' : '' }}
+            <span v-if="filterStatus !== 'all'">
+              ({{ filterStatus === 'active' ? 'actives' : 'terminées' }})
+            </span>
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
 
       <!-- Liste des tâches actives de l'utilisateur connecté -->
       <div v-if="myTasks.length > 0" class="task-list">
@@ -101,7 +153,8 @@
 import { 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
   IonButton, IonText, IonModal, IonItem, IonLabel, 
-  IonInput, IonButtons, IonCheckbox, IonIcon, IonSpinner
+  IonInput, IonButtons, IonCheckbox, IonIcon, IonSpinner,
+  IonCard, IonCardContent, IonSelect, IonSelectOption
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
 import { firebaseService } from '@/firebase';
@@ -115,15 +168,66 @@ const newDescription = ref('');
 const isLoading = ref(false);
 const errorMessage = ref('');
 
+// Variables pour la recherche et le filtrage
+const searchTerm = ref('');
+const filterStatus = ref('all'); // 'all', 'active', 'completed'
+const sortBy = ref('createdAt'); // 'createdAt', 'title', 'isDone'
+const sortOrder = ref('desc'); // 'asc', 'desc'
+
 const showEditTask = ref(false);
 const editTaskId = ref(null);
 const editTitle = ref('');
 const editDescription = ref('');
 const editIsDone = ref(false);
 
-const myTasks = computed(() =>
-  state.tasks.filter(task => task.userId === state.user?.uid )
-);
+const myTasks = computed(() => {
+  let filteredTasks = state.tasks.filter(task => task.userId === state.user?.uid);
+  
+  // Filtrage par statut
+  if (filterStatus.value === 'active') {
+    filteredTasks = filteredTasks.filter(task => !task.isDone);
+  } else if (filterStatus.value === 'completed') {
+    filteredTasks = filteredTasks.filter(task => task.isDone);
+  }
+  
+  // Recherche par titre ou description
+  if (searchTerm.value.trim()) {
+    const searchLower = searchTerm.value.toLowerCase();
+    filteredTasks = filteredTasks.filter(task => 
+      task.title.toLowerCase().includes(searchLower) ||
+      task.description.toLowerCase().includes(searchLower)
+    );
+  }
+  
+  // Tri des tâches
+  filteredTasks.sort((a, b) => {
+    let aValue, bValue;
+    
+    switch (sortBy.value) {
+      case 'title':
+        aValue = a.title.toLowerCase();
+        bValue = b.title.toLowerCase();
+        break;
+      case 'isDone':
+        aValue = a.isDone ? 1 : 0;
+        bValue = b.isDone ? 1 : 0;
+        break;
+      case 'createdAt':
+      default:
+        aValue = a.createdAt;
+        bValue = b.createdAt;
+        break;
+    }
+    
+    if (sortOrder.value === 'asc') {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
+  });
+  
+  return filteredTasks;
+});
 
 const router = useRouter();
 
