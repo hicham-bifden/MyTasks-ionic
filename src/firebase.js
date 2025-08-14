@@ -17,6 +17,8 @@ import {
   where,
   Timestamp // ✅ Import du Timestamp
 } from "firebase/firestore";
+import Task from './models/Task.js';
+import User from './models/User.js';
 
 // 🔥 Configuration Firebase
 const firebaseConfig = {
@@ -49,18 +51,48 @@ export const firebaseService = {
   // 🔐 Inscription
   async register(user) {
     const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
-    await addDoc(collection(db, COLLECTIONS.USERS), {
+    
+    // Créer l'utilisateur dans Firestore
+    const userData = {
       uid: userCredential.user.uid,
       email: user.email,
       name: user.name,
-      createdAt: Timestamp.now() // ✅ Correction ici
-    });
-    return { success: true, user: userCredential.user };
+      createdAt: Timestamp.now()
+    };
+    
+    await addDoc(collection(db, COLLECTIONS.USERS), userData);
+    
+    // Retourner l'utilisateur avec les données complètes
+    const newUser = new User(
+      userCredential.user.uid,
+      user.email,
+      user.name,
+      userData.createdAt
+    );
+    
+    return { success: true, user: newUser };
   },
 
   // 🔐 Connexion
   async login(credentials) {
     const userCredential = await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
+    
+    // Récupérer les données utilisateur depuis Firestore
+    const userQuery = query(collection(db, COLLECTIONS.USERS), where("uid", "==", userCredential.user.uid));
+    const userSnapshot = await getDocs(userQuery);
+    
+    if (!userSnapshot.empty) {
+      const userDoc = userSnapshot.docs[0];
+      const userData = userDoc.data();
+      const user = new User(
+        userData.uid,
+        userData.email,
+        userData.name,
+        userData.createdAt
+      );
+      return { success: true, user };
+    }
+    
     return { success: true, user: userCredential.user };
   },
 
@@ -78,21 +110,60 @@ export const firebaseService = {
   async getTasks(userId) {
     const q = query(collection(db, COLLECTIONS.TASKS), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
-    const tasks = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const tasks = querySnapshot.docs.map(doc => {
+      const taskData = doc.data();
+      return new Task(
+        doc.id,
+        taskData.userId,
+        taskData.title,
+        taskData.description,
+        taskData.isDone || false,
+        taskData.createdAt,
+        taskData.updatedAt,
+        true // isOwner = true car ce sont les tâches de l'utilisateur
+      );
+    });
     return { success: true, tasks };
   },
 
   // 🌍 Récupérer toutes les tâches (admin ou vue globale)
   async getAllTasks() {
-    const snapshot = await getDocs(collection(db, COLLECTIONS.TASKS));
-    const tasks = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    return { success: true, tasks };
+    try {
+      // Récupérer toutes les tâches
+      const tasksSnapshot = await getDocs(collection(db, COLLECTIONS.TASKS));
+      
+      // Récupérer tous les utilisateurs pour avoir leurs noms
+      const usersSnapshot = await getDocs(collection(db, COLLECTIONS.USERS));
+      const usersMap = new Map();
+      usersSnapshot.docs.forEach(doc => {
+        const userData = doc.data();
+        usersMap.set(userData.uid, userData.name);
+      });
+      
+      const tasks = tasksSnapshot.docs.map(doc => {
+        const taskData = doc.data();
+        return new Task(
+          doc.id,
+          taskData.userId,
+          taskData.title,
+          taskData.description,
+          taskData.isDone || false,
+          taskData.createdAt,
+          taskData.updatedAt,
+          false // isOwner sera déterminé par l'UI
+        );
+      });
+      
+      // Ajouter le nom du propriétaire à chaque tâche
+      tasks.forEach(task => {
+        task.ownerName = usersMap.get(task.userId) || 'Utilisateur inconnu';
+      });
+      
+      return { success: true, tasks };
+    } catch (error) {
+      console.error('Erreur getAllTasks:', error);
+      throw error;
+    }
   },
 
   // ✏️ Mettre à jour une tâche

@@ -27,12 +27,29 @@
 import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonText, IonIcon } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
 import { state } from '@/store/state';
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
+import api from '@/services/firebase';
 
+// Tâches des autres utilisateurs
 const otherTasks = computed(() =>
   state.tasks.filter(task => !task.isOwner && !task.isDone)
-  state.tasks.filter(task => !task.isOwner && task.isDone) // Vérifie que la tâche est active et n'appartient pas à l'utilisateur connecté
 );
+
+// Charger toutes les tâches au montage
+onMounted(async () => {
+  if (state.user) {
+    try {
+      const response = await api.getAllTasks();
+      // Marquer les tâches comme appartenant ou non à l'utilisateur connecté
+      state.tasks = response.tasks.map(task => ({
+        ...task,
+        isOwner: task.userId === state.user.uid
+      }));
+    } catch (error) {
+      console.error('Erreur lors du chargement des tâches:', error);
+    }
+  }
+});
 </script>
 
 <style scoped>

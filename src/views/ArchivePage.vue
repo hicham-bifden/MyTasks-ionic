@@ -35,22 +35,44 @@ import {
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
 import { state } from '@/store/state';
-import { computed } from 'vue';
-import { firebaseService } from '@/firebase';
+import { computed, onMounted } from 'vue';
+import api from '@/services/firebase';
 
 const archivedTasks = computed(() =>
   state.tasks.filter(task => task.isDone)
 );
 
+// Charger toutes les tâches au montage
+onMounted(async () => {
+  if (state.user) {
+    try {
+      const response = await api.getAllTasks();
+      // Marquer les tâches comme appartenant ou non à l'utilisateur connecté
+      state.tasks = response.tasks.map(task => ({
+        ...task,
+        isOwner: task.userId === state.user.uid
+      }));
+    } catch (error) {
+      console.error('Erreur lors du chargement des tâches:', error);
+    }
+  }
+});
+
 async function restoreTask(task) {
   try {
-    await firebaseService.updateTask({
+    await api.updateTask({
       id: task.id,
       userId: task.userId,
       title: task.title,
       description: task.description,
       isDone: false
     });
+    // Recharger les tâches après modification
+    const response = await api.getAllTasks();
+    state.tasks = response.tasks.map(task => ({
+      ...task,
+      isOwner: task.userId === state.user.uid
+    }));
   } catch (e) {
     console.error('Erreur restoreTask:', e);
   }
@@ -59,7 +81,13 @@ async function restoreTask(task) {
 async function deleteTask(task) {
   if (!confirm('Supprimer cette tâche ?')) return;
   try {
-    await firebaseService.removeTask(task.id);
+    await api.removeTask(task.id);
+    // Recharger les tâches après suppression
+    const response = await api.getAllTasks();
+    state.tasks = response.tasks.map(task => ({
+      ...task,
+      isOwner: task.userId === state.user.uid
+    }));
   } catch (e) {
     console.error('Erreur deleteTask:', e);
   }

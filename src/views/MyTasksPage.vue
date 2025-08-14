@@ -19,29 +19,26 @@
         <ion-icon slot="start" name="add-circle-outline" /> Ajouter une tâche
       </ion-button>
 
-      <div class="task-list"/>
-        <div v-if="myTasks.length > 0">
-          <TaskItem
-            v-for="task in myTasks"
-            :key="task.id"
-            :task="task"
-            :showOwner="false"
-            @edit="editTask"
-            @delete="deleteTask"
-          />
-        </div>
-        <ion-text v-else color="medium">Aucune tâche active.</ion-text>
+      <!-- Message d'erreur -->
+      <ion-text v-if="errorMessage" color="danger" class="ion-margin-bottom">
+        {{ errorMessage }}
+      </ion-text>
+
+      <!-- Indicateur de chargement -->
+      <ion-spinner v-if="isLoading" name="crescent" class="ion-margin"></ion-spinner>
+
       <!-- Liste des tâches actives de l'utilisateur connecté -->
-      <div v-if="myTasks.length > 0">
+      <div v-if="myTasks.length > 0" class="task-list">
         <TaskItem
-          v-for="task in state.tasks"
-          :key="task.taskId"
+          v-for="task in myTasks"
+          :key="task.id"
           :task="task"
           :showOwner="false"
           @edit="editTask"
           @delete="deleteTask"
         />
       </div>
+      <ion-text v-else-if="!isLoading" color="medium">Aucune tâche active.</ion-text>
 
       <!-- Modal ajout -->
       <ion-modal :is-open="showAddTask" @didDismiss="showAddTask = false">
@@ -101,10 +98,10 @@
 </template>
 
 <script setup>
-import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonButton, IonText, IonModal, IonItem, IonLabel,
-  IonInput, IonButtons, IonCheckbox, IonIcon
+import { 
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
+  IonButton, IonText, IonModal, IonItem, IonLabel, 
+  IonInput, IonButtons, IonCheckbox, IonIcon, IonSpinner
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
 import { firebaseService } from '@/firebase';
@@ -115,6 +112,8 @@ import { useRouter } from 'vue-router';
 const showAddTask = ref(false);
 const newTitle = ref('');
 const newDescription = ref('');
+const isLoading = ref(false);
+const errorMessage = ref('');
 
 const showEditTask = ref(false);
 const editTaskId = ref(null);
@@ -132,26 +131,38 @@ onMounted(loadTasks);
 
 console.log('state.user:', state.user);
 async function loadTasks() {
+  if (!state.user) return;
+  
+  isLoading.value = true;
+  errorMessage.value = '';
+  
   try {
-    const response = await firebaseService.getAllTasks();
+    const response = await api.getAllTasks();
+    // Marquer les tâches comme appartenant ou non à l'utilisateur connecté
     state.tasks = response.tasks.map(task => ({
       ...task,
       isOwner: task.userId === state.user.uid
     })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   } catch (e) {
     console.error('Erreur loadTasks:', e);
+    errorMessage.value = 'Erreur lors du chargement des tâches';
+  } finally {
+    isLoading.value = false;
   }
 }
 
 async function addTask() {
   if (!newTitle.value || !newDescription.value) return;
+  
+  isLoading.value = true;
+  errorMessage.value = '';
+  
   try {
-    await firebaseService.addTask({
+    await api.addTask({
       userId: state.user.uid,
       title: newTitle.value,
       description: newDescription.value,
-      isDone: false,
-      createdAt: new Date().toISOString()
+      isDone: false
     });
     showAddTask.value = false;
     newTitle.value = '';
@@ -159,6 +170,9 @@ async function addTask() {
     await loadTasks();
   } catch (e) {
     console.error('Erreur addTask:', e);
+    errorMessage.value = 'Erreur lors de l\'ajout de la tâche';
+  } finally {
+    isLoading.value = false;
   }
 }
 
@@ -179,8 +193,11 @@ function closeEditTask() {
 }
 
 async function updateTask() {
+  isLoading.value = true;
+  errorMessage.value = '';
+  
   try {
-    await firebaseService.updateTask({
+    await api.updateTask({
       id: editTaskId.value,
       userId: state.user.uid,
       title: editTitle.value,
@@ -191,16 +208,26 @@ async function updateTask() {
     await loadTasks();
   } catch (e) {
     console.error('Erreur updateTask:', e);
+    errorMessage.value = 'Erreur lors de la modification de la tâche';
+  } finally {
+    isLoading.value = false;
   }
 }
 
 async function deleteTask(task) {
   if (!confirm('Supprimer cette tâche ?')) return;
+  
+  isLoading.value = true;
+  errorMessage.value = '';
+  
   try {
-    await firebaseService.removeTask(task.id);
+    await api.removeTask(task.id);
     await loadTasks();
   } catch (e) {
     console.error('Erreur deleteTask:', e);
+    errorMessage.value = 'Erreur lors de la suppression de la tâche';
+  } finally {
+    isLoading.value = false;
   }
 }
 
