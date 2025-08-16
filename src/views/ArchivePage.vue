@@ -3,27 +3,60 @@
     <ion-header>
       <ion-toolbar color="warning">
         <ion-title>
-          <ion-icon name="archive-outline" style="margin-right:8px;" />
-          Archivées
+          <ion-icon name="archive" style="margin-right:8px;" />
+          Tâches Archivées
         </ion-title>
+        <ion-buttons slot="end">
+          <ion-button @click="logout">Déconnexion</ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
     <ion-content class="ion-padding fade-in">
-      <div v-if="archivedTasks.length > 0">
+      <!-- Message d'erreur -->
+      <ion-text v-if="errorMessage" color="danger" class="ion-margin-bottom">
+        {{ errorMessage }}
+      </ion-text>
+
+      <!-- Message si utilisateur non connecté -->
+      <ion-card v-if="!state.user || !state.user.userId" class="ion-margin-bottom" color="warning">
+        <ion-card-content>
+          <ion-text color="warning">
+            <ion-icon name="alert-circle" style="margin-right:8px;" />
+            Vous devez être connecté pour consulter les tâches
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Compteur de tâches -->
+      <ion-card class="ion-margin-bottom">
+        <ion-card-content>
+          <ion-text color="medium">
+            {{ archivedTasks.length }} tâche{{ archivedTasks.length > 1 ? 's' : '' }} archivée{{ archivedTasks.length > 1 ? 's' : '' }}
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Information sur les tâches archivées -->
+      <ion-card class="ion-margin-bottom" color="light">
+        <ion-card-content>
+          <ion-text color="medium">
+            <ion-icon name="information-circle" style="margin-right:8px;" />
+            Les tâches archivées sont en lecture seule. Seul un administrateur peut modifier leur statut via Firestore.
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Liste des tâches archivées -->
+      <div v-if="archivedTasks.length > 0" class="task-list">
         <TaskItem
           v-for="task in archivedTasks"
-          :key="task.id"
+          :key="task.taskId"
           :task="task"
           :showOwner="true"
-        >
-          <template #actions v-if="task.isOwner">
-            <ion-button size="small" color="success" @click="restoreTask(task)">Restaurer</ion-button>
-            <ion-button size="small" color="danger" @click="deleteTask(task)">Supprimer</ion-button>
-          </template>
-        </TaskItem>
+        />
       </div>
-      <ion-text v-else color="medium">Aucune tâche archivée.</ion-text>
+      <ion-text v-else-if="state.user && state.user.userId" color="medium">Aucune tâche archivée.</ion-text>
     </ion-content>
   </ion-page>
 </template>
@@ -31,66 +64,77 @@
 <script setup>
 import {
   IonPage, IonHeader, IonToolbar, IonTitle,
-  IonContent, IonText, IonButton, IonIcon
+  IonContent, IonText, IonButtons, IonIcon,
+  IonCard, IonCardContent
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
 import { state } from '@/store/state';
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { firebaseService } from '@/firebase';
+import { auth } from '@/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useRouter } from 'vue-router';
 
-const archivedTasks = computed(() =>
-  state.tasks.filter(task => task.isDone)
-);
+const errorMessage = ref('');
 
-// Charger toutes les tâches au montage
-onMounted(async () => {
-  if (state.user) {
-    try {
-      const response = await firebaseService.getAllTasks();
-      // Marquer les tâches comme appartenant ou non à l'utilisateur connecté
-      state.tasks = response.tasks.map(task => ({
-        ...task,
-        isOwner: task.userId === state.user.uid
-      }));
-    } catch (error) {
-      console.error('Erreur lors du chargement des tâches:', error);
-    }
-  }
+// Toutes les tâches archivées avec tri par date décroissante
+const archivedTasks = computed(() => {
+  let filteredTasks = state.tasks.filter(task => task.status === 'archivee');
+  
+  // Tri par date de création décroissante
+  filteredTasks.sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+    return dateB - dateA;
+  });
+  
+  return filteredTasks;
 });
 
-async function restoreTask(task) {
+const router = useRouter();
+
+// Charger toutes les tâches au montage
+onMounted(() => {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loadTasks();
+    } else {
+      state.user = null;
+      state.tasks = [];
+    }
+  });
+});
+
+// Surveiller les changements d'état utilisateur
+watch(() => state.user, (newUser) => {
+  if (newUser && newUser.userId) {
+    loadTasks();
+  }
+}, { immediate: true });
+
+async function loadTasks() {
+  if (!auth.currentUser) return;
+  
+  errorMessage.value = '';
+  
   try {
-    await firebaseService.updateTask({
-      id: task.id,
-      userId: task.userId,
-      title: task.title,
-      description: task.description,
-      isDone: false
-    });
-    // Recharger les tâches après modification
+    const userResponse = await firebaseService.getUserInfo(auth.currentUser.uid);
+    if (userResponse.success) {
+      state.user = userResponse.user;
+    }
+    
     const response = await firebaseService.getAllTasks();
-    state.tasks = response.tasks.map(task => ({
-      ...task,
-      isOwner: task.userId === state.user.uid
-    }));
-  } catch (e) {
-    console.error('Erreur restoreTask:', e);
+    state.tasks = response.tasks;
+  } catch (error) {
+    console.error('Erreur lors du chargement des tâches:', error);
+    errorMessage.value = 'Erreur lors du chargement des tâches';
   }
 }
 
-async function deleteTask(task) {
-  if (!confirm('Supprimer cette tâche ?')) return;
-  try {
-    await firebaseService.removeTask(task.id);
-    // Recharger les tâches après suppression
-    const response = await firebaseService.getAllTasks();
-    state.tasks = response.tasks.map(task => ({
-      ...task,
-      isOwner: task.userId === state.user.uid
-    }));
-  } catch (e) {
-    console.error('Erreur deleteTask:', e);
-  }
+function logout() {
+  state.user = null;
+  state.tasks = [];
+  router.push('/login');
 }
 </script>
 
@@ -98,6 +142,9 @@ async function deleteTask(task) {
 ion-content {
   display: flex;
   flex-direction: column;
+}
+.task-list {
+  margin-top: 16px;
 }
 .fade-in {
   animation: fadeIn 1s ease-in-out;

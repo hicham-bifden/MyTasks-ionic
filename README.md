@@ -1,227 +1,152 @@
-# 📱 MyTasks - Application de Gestion de Tâches
+# MyTasks - Application de Gestion de Tâches
 
-Une application moderne de gestion de tâches construite avec **Ionic Vue** et **Firebase**, offrant une expérience utilisateur intuitive et des fonctionnalités avancées.
+## Description
+Application Ionic avec Firebase pour la gestion de tâches avec authentification complète et interface à onglets.
 
-## ✨ Fonctionnalités
+## Fonctionnalités
 
-### 🔐 Authentification
-- **Inscription** : Création de compte avec email et mot de passe
-- **Connexion** : Authentification sécurisée
-- **Gestion de profil** : Stockage des informations utilisateur
+### 🔐 Authentification Firebase
+- Inscription et connexion des utilisateurs
+- Gestion des sessions avec Firebase Auth
+- Protection des routes
 
 ### 📋 Gestion des Tâches
-- **Création** : Ajout de nouvelles tâches avec titre et description
-- **Modification** : Édition des tâches existantes
-- **Suppression** : Suppression sécurisée des tâches
-- **Archivage** : Marquage des tâches comme terminées
+- **CRUD complet** sur les tâches avec Firestore
+- **Trois statuts** : Active, Fermée, Archivée
+- **Droits d'accès** : modification uniquement des propres tâches
+- **Tri automatique** par date de création décroissante
 
-### 🔍 Recherche et Filtrage
-- **Recherche** : Recherche par titre ou description
-- **Filtrage** : Filtrage par statut (toutes, actives, terminées)
-- **Tri** : Tri par date, titre ou statut (croissant/décroissant)
+### 🎯 Interface à Onglets
 
-### 👥 Collaboration
-- **Vue personnelle** : Affichage de ses propres tâches
-- **Vue publique** : Consultation des tâches des autres utilisateurs
-- **Archives** : Accès aux tâches terminées
+#### 1. **Actives** (`/tabs/actives`)
+- Affiche les tâches actives de l'utilisateur connecté
+- Permet de créer, modifier, fermer et supprimer les tâches
+- Bouton d'ajout de nouvelle tâche
 
-## 🛠️ Technologies Utilisées
+#### 2. **Fermées** (`/tabs/fermees`)
+- Affiche les tâches fermées de l'utilisateur connecté
+- Permet de réouvrir ou archiver les tâches
+- Actions limitées au propriétaire
 
-- **Frontend** : Ionic Vue 8 + Vue 3
-- **Backend** : Firebase (Firestore + Authentication)
-- **Base de données** : Firestore (NoSQL)
-- **Authentification** : Firebase Auth
-- **Build** : Vite + TypeScript
-- **Styling** : CSS avec composants Ionic
+#### 3. **Archivées** (`/tabs/archivees`)
+- Affiche toutes les tâches archivées (lecture seule)
+- Aucune modification possible par les utilisateurs
+- Seul un admin peut changer le statut via Firestore
 
-## 🚀 Installation et Démarrage
+### 🔒 Permissions et Sécurité
+- L'utilisateur ne peut modifier que ses propres tâches
+- Modification du statut uniquement sur les tâches actives et fermées
+- Consultation des tâches des autres utilisateurs en lecture seule
+- Affichage du nom du propriétaire sur toutes les tâches
 
-### Prérequis
-- Node.js 18+ 
-- npm ou yarn
-- Compte Firebase
+## Structure du Projet
 
-### 1. Cloner le projet
+```
+src/
+├── components/
+│   ├── TaskItem.vue          # Composant d'affichage des tâches
+│   └── TabsMenu.vue          # Menu de navigation par onglets
+├── views/
+│   ├── ActivesPage.vue       # Page des tâches actives
+│   ├── FermeesPage.vue       # Page des tâches fermées
+│   ├── ArchivePage.vue       # Page des tâches archivées
+│   ├── LoginPage.vue         # Page de connexion
+│   ├── RegisterPage.vue      # Page d'inscription
+│   └── TabsPage.vue          # Conteneur des onglets
+├── services/
+│   └── firebase.js           # Service Firebase (remplace l'API externe)
+├── models/
+│   ├── Task.js               # Modèle de tâche
+│   └── User.js               # Modèle d'utilisateur
+└── firebase.js               # Configuration et service Firebase
+```
+
+## Modèles de Données
+
+### Tâche (Task)
+```javascript
+{
+  id: string,           // ID auto-généré par Firestore
+  userId: string,       // UID Firebase du créateur
+  title: string,        // Titre de la tâche
+  description: string,  // Description de la tâche
+  status: 'active' | 'fermee' | 'archivee',
+  createdAt: Timestamp, // Date de création
+  updatedAt: Timestamp, // Date de dernière modification
+  isOwner: boolean      // Si l'utilisateur connecté est propriétaire
+}
+```
+
+### Utilisateur (User)
+```javascript
+{
+  uid: string,          // UID Firebase
+  email: string,        // Email de l'utilisateur
+  name: string,         // Nom de l'utilisateur
+  createdAt: Timestamp  // Date de création du compte
+}
+```
+
+## Installation et Démarrage
+
+1. **Cloner le projet**
 ```bash
-git clone <votre-repo>
+git clone <repository-url>
 cd MyTasks-ionic
 ```
 
-### 2. Installer les dépendances
+2. **Installer les dépendances**
 ```bash
 npm install
 ```
 
-### 3. Configuration Firebase
-1. Créer un projet Firebase
-2. Activer Authentication (Email/Password)
-3. Activer Firestore Database
-4. Copier la configuration dans `src/firebase.js`
+3. **Configuration Firebase**
+- Créer un projet Firebase
+- Activer Authentication et Firestore
+- Mettre à jour la configuration dans `src/firebase.js`
 
-### 4. Lancer l'application
+4. **Lancer l'application**
 ```bash
-# Développement
 npm run dev
-
-# Build de production
-npm run build
-
-# Prévisualisation
-npm run preview
 ```
 
-## 📁 Structure du Projet
-
-```
-src/
-├── components/          # Composants réutilisables
-│   ├── TaskItem.vue    # Composant d'affichage des tâches
-│   └── TabsMenu.vue    # Menu de navigation
-├── models/             # Modèles de données
-│   ├── Task.js         # Modèle des tâches
-│   └── User.js         # Modèle des utilisateurs
-├── services/           # Services et API
-│   ├── firebase.js     # Service Firebase
-│   └── api.js          # Ancien service API (déprécié)
-├── store/              # État global
-│   └── state.js        # Store Vue réactif
-├── views/              # Pages de l'application
-│   ├── LoginPage.vue   # Page de connexion
-│   ├── RegisterPage.vue # Page d'inscription
-│   ├── MyTasksPage.vue # Mes tâches
-│   ├── OtherTasksPage.vue # Tâches des autres
-│   └── ArchivePage.vue # Tâches archivées
-└── firebase.js         # Configuration Firebase
-```
-
-## 🔥 Configuration Firebase
-
-### Collections Firestore
-- **`utilisateurs`** : Informations des utilisateurs
-- **`tasks`** : Tâches des utilisateurs
-
-### Règles de Sécurité
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Utilisateurs peuvent lire/écrire leurs propres données
-    match /utilisateurs/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Utilisateurs peuvent lire/écrire leurs propres tâches
-    match /tasks/{taskId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-    }
-    
-    // Permettre la lecture de toutes les tâches pour l'affichage public
-    match /tasks/{taskId} {
-      allow read: if request.auth != null;
-    }
-  }
-}
-```
-
-## 📱 Déploiement
+## Déploiement
 
 ### Firebase Hosting
 ```bash
-# Installer Firebase CLI
-npm install -g firebase-tools
-
-# Se connecter
-firebase login
-
-# Initialiser le projet
-firebase init hosting
-
-# Déployer
+npm run build
 firebase deploy
 ```
 
-### Capacitor (Mobile)
+### Capacitor (Android/iOS)
 ```bash
-# Ajouter les plateformes
+npm run build
 npx cap add android
 npx cap add ios
-
-# Synchroniser
 npx cap sync
-
-# Ouvrir dans l'IDE
-npx cap open android
-npx cap open ios
 ```
 
-## 🧪 Tests
+## Technologies Utilisées
 
-```bash
-# Tests unitaires
-npm run test:unit
+- **Frontend** : Ionic Vue 7
+- **Backend** : Firebase (Auth + Firestore)
+- **Build** : Vite
+- **Mobile** : Capacitor
+- **Langage** : TypeScript/JavaScript
 
-# Tests E2E
-npm run test:e2e
+## Consignes Respectées
 
-# Linting
-npm run lint
-```
+✅ **CRUD complet** sur les tâches avec Firestore  
+✅ **Authentification Firebase** complète  
+✅ **Interface à onglets** avec filtres dynamiques  
+✅ **Gestion des droits d'accès** : modification uniquement des propres tâches  
+✅ **Optimisation mobile** avec Capacitor  
+✅ **Déploiement Firebase Hosting**  
+✅ **Suppression de l'API externe** - utilisation exclusive de Firestore  
 
-## 🔧 Scripts Disponibles
+## Notes Importantes
 
-- `npm run dev` - Serveur de développement
-- `npm run build` - Build de production
-- `npm run preview` - Prévisualisation du build
-- `npm run test:unit` - Tests unitaires
-- `npm run test:e2e` - Tests end-to-end
-- `npm run lint` - Vérification du code
-
-## 📊 Fonctionnalités Avancées
-
-### Recherche Intelligente
-- Recherche en temps réel
-- Filtrage par statut
-- Tri personnalisable
-
-### Interface Responsive
-- Design adaptatif
-- Animations fluides
-- Composants Ionic natifs
-
-### Gestion d'État
-- Store Vue réactif
-- Synchronisation Firebase
-- Gestion des erreurs
-
-## 🤝 Contribution
-
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Committer les changements (`git commit -m 'Add AmazingFeature'`)
-4. Pousser vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
-
-## 📝 Licence
-
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
-
-## 🆘 Support
-
-Pour toute question ou problème :
-- Ouvrir une issue sur GitHub
-- Consulter la documentation Firebase
-- Vérifier la console de développement
-
-## 🎯 Roadmap
-
-- [ ] Notifications push
-- [ ] Synchronisation offline
-- [ ] Partage de tâches
-- [ ] Calendrier intégré
-- [ ] Thèmes personnalisables
-- [ ] Export des données
-- [ ] API REST publique
-
----
-
-**Développé avec ❤️ par Hicham Bifden - 2025** 
+- Les tâches archivées sont en **lecture seule** pour tous les utilisateurs
+- Seul un **administrateur** peut modifier le statut des tâches archivées via Firestore
+- L'application respecte les **droits d'accès** : chaque utilisateur ne peut modifier que ses propres tâches
+- Le **tri automatique** par date de création décroissante est appliqué sur tous les onglets 

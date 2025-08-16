@@ -57,9 +57,8 @@ async function loginUser() {
     const response = await firebaseService.login({ email: email.value, password: password.value });
     // Stockage de l'utilisateur connecté dans l'état global
     state.user = response.user;
-    console.log('Utilisateur connecté:', state.user, response);
     // Redirection vers la page principale (onglets)
-    router.push('/tabs');
+    router.push('/actives');
   } catch (error) {
     // Gestion des erreurs (mauvais identifiants, etc.)
     errorMessage.value = "Email ou mot de passe incorrect.";

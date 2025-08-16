@@ -195,19 +195,15 @@ onMounted(() => {
   // Vérifier l'état de l'authentification Firebase
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      console.log('Utilisateur authentifié:', user);
       // L'utilisateur est connecté, charger ses tâches
       loadTasks();
     } else {
-      console.log('Aucun utilisateur connecté');
       // L'utilisateur n'est pas connecté, vider l'état
       state.user = null;
       state.tasks = [];
     }
   });
 });
-
-console.log('state.user:', state.user);
 async function loadTasks() {
   if (!auth.currentUser) return;
   

@@ -1,14 +1,12 @@
-// Modèle Tâche pour Firebase
+// Modèle Tâche selon les consignes
 export default class Task {
-  constructor(id, userId, title, description, isDone, createdAt, updatedAt, isOwner = false) {
-    this.id = id;
-    this.userId = userId;
+  constructor(taskId, ownerId, title, description, status, createdAt) {
+    this.taskId = taskId;
+    this.ownerId = ownerId;
     this.title = title;
     this.description = description;
-    this.isDone = isDone;
+    this.status = status;
     this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
-    this.isOwner = isOwner; // Pour savoir si l'utilisateur peut modifier
   }
   
   // Méthode pour créer une tâche depuis Firestore
@@ -16,25 +14,22 @@ export default class Task {
     const data = doc.data();
     return new Task(
       doc.id,
-      data.userId,
+      data.ownerId,
       data.title,
       data.description,
-      data.isDone || false,
-      data.createdAt,
-      data.updatedAt,
-      data.isOwner || false
+      data.status || 'active',
+      data.createdAt
     );
   }
   
   // Méthode pour convertir en objet Firestore
   toFirestore() {
     return {
-      userId: this.userId,
+      ownerId: this.ownerId,
       title: this.title,
       description: this.description,
-      isDone: this.isDone,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      status: this.status,
+      createdAt: this.createdAt
     };
   }
 } 

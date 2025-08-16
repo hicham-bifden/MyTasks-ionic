@@ -1,16 +1,16 @@
 <template>
   <nav class="tab-bar fade-in">
-    <button @click="$router.push('/mytasks')" :class="{active: $route.path === '/mytasks'}">
-      <ion-icon name="list-outline" />
-      <span>Mes tâches</span>
+    <button @click="$router.push('/actives')" :class="{active: $route.path === '/actives'}">
+      <ion-icon name="checkmark-circle" />
+      <span>Actives</span>
     </button>
-    <button @click="$router.push('/othertasks')" :class="{active: $route.path === '/othertasks'}">
-      <ion-icon name="people-outline" />
-      <span>Autres tâches</span>
+    <button @click="$router.push('/fermees')" :class="{active: $route.path === '/fermees'}">
+      <ion-icon name="close-circle" />
+      <span>Fermées</span>
     </button>
-    <button @click="$router.push('/archive')" :class="{active: $route.path === '/archive'}">
-      <ion-icon name="archive-outline" />
-      <span>Archives</span>
+    <button @click="$router.push('/archivees')" :class="{active: $route.path === '/archivees'}">
+      <ion-icon name="archive" />
+      <span>Archivées</span>
     </button>
   </nav>
 </template>

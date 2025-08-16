@@ -8,10 +8,16 @@
     <ion-content class="ion-padding">
       <!-- Formulaire d'inscription -->
       <form @submit.prevent="registerUser">
-        <!-- Nom complet -->
+        <!-- Prénom -->
         <ion-item>
-          <ion-label position="floating">Nom complet</ion-label>
-          <ion-input v-model="fullName" required></ion-input>
+          <ion-label position="floating">Prénom</ion-label>
+          <ion-input v-model="firstName" required></ion-input>
+        </ion-item>
+
+        <!-- Nom de famille -->
+        <ion-item>
+          <ion-label position="floating">Nom de famille</ion-label>
+          <ion-input v-model="lastName" required></ion-input>
         </ion-item>
 
         <!-- Email -->
@@ -51,10 +57,10 @@ import {
 
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "@/firebase"; // 🔁 Adapte le chemin si besoin
+import { firebaseService } from "@/firebase";
 
-const fullName = ref('');
+const firstName = ref('');
+const lastName = ref('');
 const email = ref('');
 const password = ref('');
 const errorMessage = ref('');
@@ -65,7 +71,7 @@ async function registerUser() {
   errorMessage.value = '';
   successMessage.value = '';
 
-  if (!fullName.value || !email.value || !password.value) {
+  if (!firstName.value || !lastName.value || !email.value || !password.value) {
     errorMessage.value = 'Veuillez remplir tous les champs.';
     return;
   }
@@ -77,15 +83,20 @@ async function registerUser() {
   }
 
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email.value, password.value);
-    const user = userCredential.user;
-
-    await updateProfile(user, {
-      displayName: fullName.value
+    // Utiliser le service Firebase pour l'inscription
+    const result = await firebaseService.register({
+      firstName: firstName.value,
+      lastName: lastName.value,
+      email: email.value,
+      password: password.value
     });
 
-    successMessage.value = "Inscription réussie ! Vous pouvez vous connecter.";
-    setTimeout(() => router.push('/login'), 1500);
+    if (result.success) {
+      successMessage.value = "Inscription réussie ! Vous pouvez vous connecter.";
+      setTimeout(() => router.push('/login'), 1500);
+    } else {
+      errorMessage.value = "Erreur lors de l'inscription.";
+    }
 
   } catch (error) {
     if (error.code === 'auth/email-already-in-use') {

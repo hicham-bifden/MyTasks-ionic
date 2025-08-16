@@ -15,7 +15,7 @@ import {
   doc,
   query,
   where,
-  Timestamp // ✅ Import du Timestamp
+  Timestamp
 } from "firebase/firestore";
 import Task from './models/Task.js';
 import User from './models/User.js';
@@ -52,22 +52,22 @@ export const firebaseService = {
   async register(user) {
     const userCredential = await createUserWithEmailAndPassword(auth, user.email, user.password);
     
-    // Créer l'utilisateur dans Firestore
+    // Créer l'utilisateur dans Firestore selon les consignes
     const userData = {
-      uid: userCredential.user.uid,
-      email: user.email,
-      name: user.name,
-      createdAt: Timestamp.now()
+      userId: userCredential.user.uid,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email
     };
     
     await addDoc(collection(db, COLLECTIONS.USERS), userData);
     
     // Retourner l'utilisateur avec les données complètes
     const newUser = new User(
-      userCredential.user.uid,
-      user.email,
-      user.name,
-      userData.createdAt
+      userData.userId,
+      userData.firstName,
+      userData.lastName,
+      userData.email
     );
     
     return { success: true, user: newUser };
@@ -78,55 +78,55 @@ export const firebaseService = {
     const userCredential = await signInWithEmailAndPassword(auth, credentials.email, credentials.password);
     
     // Récupérer les données utilisateur depuis Firestore
-    const userQuery = query(collection(db, COLLECTIONS.USERS), where("uid", "==", userCredential.user.uid));
+    const userQuery = query(collection(db, COLLECTIONS.USERS), where("userId", "==", userCredential.user.uid));
     const userSnapshot = await getDocs(userQuery);
     
     if (!userSnapshot.empty) {
       const userDoc = userSnapshot.docs[0];
       const userData = userDoc.data();
       const user = new User(
-        userData.uid,
-        userData.email,
-        userData.name,
-        userData.createdAt
+        userData.userId,
+        userData.firstName,
+        userData.lastName,
+        userData.email
       );
       return { success: true, user };
     }
     
-    return { success: true, user: userCredential.user };
+    return { success: false, error: 'Utilisateur non trouvé dans Firestore' };
   },
 
   // ➕ Ajouter une tâche
   async addTask(task) {
     const docRef = await addDoc(collection(db, COLLECTIONS.TASKS), {
-      ...task,
-      createdAt: Timestamp.now(), // ✅ Correction ici
-      updatedAt: Timestamp.now()  // ✅ Correction ici
+      ownerId: task.ownerId,
+      title: task.title,
+      description: task.description,
+      status: 'active',
+      createdAt: Timestamp.now()
     });
     return { success: true, id: docRef.id };
   },
 
   // 📥 Récupérer les tâches d'un utilisateur
-  async getTasks(userId) {
-    const q = query(collection(db, COLLECTIONS.TASKS), where("userId", "==", userId));
+  async getTasks(ownerId) {
+    const q = query(collection(db, COLLECTIONS.TASKS), where("ownerId", "==", ownerId));
     const querySnapshot = await getDocs(q);
     const tasks = querySnapshot.docs.map(doc => {
       const taskData = doc.data();
       return new Task(
         doc.id,
-        taskData.userId,
+        taskData.ownerId,
         taskData.title,
         taskData.description,
-        taskData.isDone || false,
-        taskData.createdAt,
-        taskData.updatedAt,
-        true // isOwner = true car ce sont les tâches de l'utilisateur
+        taskData.status || 'active',
+        taskData.createdAt
       );
     });
     return { success: true, tasks };
   },
 
-  // 🌍 Récupérer toutes les tâches (admin ou vue globale)
+  // 🌍 Récupérer toutes les tâches
   async getAllTasks() {
     try {
       // Récupérer toutes les tâches
@@ -137,26 +137,23 @@ export const firebaseService = {
       const usersMap = new Map();
       usersSnapshot.docs.forEach(doc => {
         const userData = doc.data();
-        usersMap.set(userData.uid, userData.name);
+        usersMap.set(userData.userId, `${userData.firstName} ${userData.lastName}`);
       });
       
       const tasks = tasksSnapshot.docs.map(doc => {
         const taskData = doc.data();
-        return new Task(
+        const task = new Task(
           doc.id,
-          taskData.userId,
+          taskData.ownerId,
           taskData.title,
           taskData.description,
-          taskData.isDone || false,
-          taskData.createdAt,
-          taskData.updatedAt,
-          false // isOwner sera déterminé par l'UI
+          taskData.status || 'active',
+          taskData.createdAt
         );
-      });
-      
-      // Ajouter le nom du propriétaire à chaque tâche
-      tasks.forEach(task => {
-        task.ownerName = usersMap.get(task.userId) || 'Utilisateur inconnu';
+        
+        // Ajouter le nom du propriétaire
+        task.ownerName = usersMap.get(task.ownerId) || 'Utilisateur inconnu';
+        return task;
       });
       
       return { success: true, tasks };
@@ -168,10 +165,11 @@ export const firebaseService = {
 
   // ✏️ Mettre à jour une tâche
   async updateTask(task) {
-    const taskRef = doc(db, COLLECTIONS.TASKS, task.id);
+    const taskRef = doc(db, COLLECTIONS.TASKS, task.taskId);
     await updateDoc(taskRef, {
-      ...task,
-      updatedAt: Timestamp.now() // ✅ Correction ici
+      title: task.title,
+      description: task.description,
+      status: task.status
     });
     return { success: true };
   },
@@ -183,19 +181,19 @@ export const firebaseService = {
   },
 
   // 👤 Récupérer les informations d'un utilisateur
-  async getUserInfo(uid) {
+  async getUserInfo(userId) {
     try {
-      const userQuery = query(collection(db, COLLECTIONS.USERS), where("uid", "==", uid));
+      const userQuery = query(collection(db, COLLECTIONS.USERS), where("userId", "==", userId));
       const userSnapshot = await getDocs(userQuery);
       
       if (!userSnapshot.empty) {
         const userDoc = userSnapshot.docs[0];
         const userData = userDoc.data();
         const user = new User(
-          userData.uid,
-          userData.email,
-          userData.name,
-          userData.createdAt
+          userData.userId,
+          userData.firstName,
+          userData.lastName,
+          userData.email
         );
         return { success: true, user };
       }

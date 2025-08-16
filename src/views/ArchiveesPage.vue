@@ -98,10 +98,8 @@ const archivedTasks = computed(() => {
 onMounted(() => {
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      console.log('Utilisateur authentifié:', user);
       loadTasks();
     } else {
-      console.log('Aucun utilisateur connecté');
       state.user = null;
       state.tasks = [];
     }

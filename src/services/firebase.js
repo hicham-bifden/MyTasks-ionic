@@ -17,8 +17,8 @@ export default {
   },
   
   // Récupérer les tâches
-  getTasks(userId) {
-    return firebaseService.getTasks(userId);
+  getTasks(ownerId) {
+    return firebaseService.getTasks(ownerId);
   },
   
   // Mettre à jour une tâche

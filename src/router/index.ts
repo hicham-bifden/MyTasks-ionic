@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
 
-
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
@@ -16,30 +15,16 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/RegisterPage.vue')
   },
   {
-    path: '/tabs',
-    component: () => import('../views/TabsPage.vue'),
-    children: [
-      {
-        path: '',
-        redirect: '/tabs/actives'
-      },
-      {
-        path: 'actives',
-        component: () => import('../views/ActivesPage.vue')
-      },
-      {
-        path: 'fermees',
-        component: () => import('../views/FermeesPage.vue')
-      },
-      {
-        path: 'archivees',
-        component: () => import('../views/ArchiveesPage.vue')
-      }
-    ]
+    path: '/actives',
+    component: () => import('../views/ActivesPage.vue')
   },
   {
-    path: '/mytasks',
-    redirect: '/tabs/actives'
+    path: '/fermees',
+    component: () => import('../views/FermeesPage.vue')
+  },
+  {
+    path: '/archivees',
+    component: () => import('../views/ArchivePage.vue')
   }
 ];
 
