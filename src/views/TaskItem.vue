@@ -13,7 +13,7 @@
 
     <!-- ✅ Affichage de la date dans un paragraphe -->
     <ion-card-content>
-      <p><strong>Date :</strong> {{ formattedDate }}</p>
+      <p><strong>Datee :</strong> {{  formatDate(task.createdAt) }}</p>
     </ion-card-content>
 
     <ion-card-content>
@@ -43,7 +43,7 @@ defineProps({
   }
 });
 
-// ✅ Formatage robuste de la date
+// Formatage robuste de la date
 const formattedDate = computed(() => {
   const raw = task.createdAt;
 

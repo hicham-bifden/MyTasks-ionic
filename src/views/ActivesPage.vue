@@ -3,7 +3,6 @@
     <ion-header>
       <ion-toolbar color="primary">
         <ion-title>
-          <ion-icon name="checkmark-circle" style="margin-right:8px;" />
           Tâches Actives
         </ion-title>
         <ion-buttons slot="end">
@@ -12,7 +11,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding fade-in">
+    <ion-content class="ion-padding">
       <ion-button 
         expand="block" 
         color="success" 
@@ -20,11 +19,9 @@
         class="ion-margin-bottom"
         :disabled="!state.user || !state.user.userId"
       >
-        <ion-icon slot="start" name="add-circle" /> 
         {{ state.user && state.user.userId ? 'Ajouter une tâche' : 'Connectez-vous pour ajouter une tâche' }}
       </ion-button>
 
-      <!-- Filtre de recherche -->
       <ion-card class="ion-margin-bottom">
         <ion-card-content>
           <ion-item>
@@ -38,7 +35,6 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Boutons pour basculer entre mes tâches et autres -->
       <div class="button-group ion-margin-bottom">
         <ion-button 
           expand="block" 
@@ -46,7 +42,6 @@
           @click="showOtherTasks = false"
           :disabled="!state.user || !state.user.userId"
         >
-          <ion-icon slot="start" name="person-circle" /> 
           Mes Tâches
         </ion-button>
         
@@ -56,27 +51,22 @@
           @click="showOtherTasks = true"
           :disabled="!state.user || !state.user.userId"
         >
-          <ion-icon slot="start" name="people-circle" /> 
           Tâches des Autres
         </ion-button>
       </div>
 
-      <!-- Message d'erreur -->
       <ion-text v-if="errorMessage" color="danger" class="ion-margin-bottom">
         {{ errorMessage }}
       </ion-text>
 
-      <!-- Message si utilisateur non connecté -->
       <ion-card v-if="!state.user || !state.user.userId" class="ion-margin-bottom" color="warning">
         <ion-card-content>
           <ion-text color="warning">
-            <ion-icon name="alert-circle" style="margin-right:8px;" />
             Vous devez être connecté pour gérer vos tâches
           </ion-text>
         </ion-card-content>
       </ion-card>
 
-      <!-- Compteur de tâches -->
       <ion-card class="ion-margin-bottom">
         <ion-card-content>
           <ion-text color="medium">
@@ -86,25 +76,23 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Liste des tâches actives -->
       <div v-if="filteredTasks.length > 0" class="task-list">
         <TaskItem
           v-for="task in filteredTasks"
           :key="task.taskId"
           :task="task"
           :showOwner="true"
+          :showTransfer="task.ownerId === state.user?.userId"
+          @taskTransferred="handleTaskTransferred"
         >
           <template #actions v-if="task.ownerId === state.user?.userId">
             <ion-button size="small" color="primary" @click="editTask(task)">
-              <ion-icon slot="start" name="create" />
               Modifier
             </ion-button>
             <ion-button size="small" color="secondary" @click="closeTask(task)">
-              <ion-icon slot="start" name="close-circle" />
               Fermer
             </ion-button>
             <ion-button size="small" color="danger" @click="deleteTask(task)">
-              <ion-icon slot="start" name="trash" />
               Supprimer
             </ion-button>
           </template>
@@ -114,7 +102,6 @@
         Aucune tâche active trouvée.
       </ion-text>
 
-      <!-- Modal ajout -->
       <ion-modal :is-open="showAddTask" @didDismiss="showAddTask = false">
         <ion-header>
           <ion-toolbar color="primary">
@@ -139,7 +126,6 @@
         </ion-content>
       </ion-modal>
 
-      <!-- Modal modification -->
       <ion-modal :is-open="showEditTask" @didDismiss="closeEditTask">
         <ion-header>
           <ion-toolbar color="primary">
@@ -171,8 +157,7 @@
 import { 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
   IonButton, IonText, IonModal, IonItem, IonLabel, 
-  IonInput, IonButtons, IonIcon,
-  IonCard, IonCardContent
+  IonInput, IonButtons, IonCard, IonCardContent
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
 import { firebaseService } from '@/firebase';
@@ -194,20 +179,15 @@ const editTaskId = ref(null);
 const editTitle = ref('');
 const editDescription = ref('');
 
-// Tâches actives filtrées avec recherche et option autres utilisateurs
 const filteredTasks = computed(() => {
   let filteredTasks = state.tasks.filter(task => task.status === 'active');
   
-  // Filtrer par propriétaire selon l'option choisie
   if (showOtherTasks.value) {
-    // Afficher les tâches des autres utilisateurs
     filteredTasks = filteredTasks.filter(task => task.ownerId !== state.user?.userId);
   } else {
-    // Afficher uniquement les tâches de l'utilisateur connecté
     filteredTasks = filteredTasks.filter(task => task.ownerId === state.user?.userId);
   }
   
-  // Recherche par titre ou description
   if (searchTerm.value.trim()) {
     const searchLower = searchTerm.value.toLowerCase();
     filteredTasks = filteredTasks.filter(task => 
@@ -215,13 +195,6 @@ const filteredTasks = computed(() => {
       task.description.toLowerCase().includes(searchLower)
     );
   }
-  
-  // Tri par date de création décroissante
-  filteredTasks.sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-    return dateB - dateA;
-  });
   
   return filteredTasks;
 });
@@ -239,7 +212,6 @@ onMounted(() => {
   });
 });
 
-// Surveiller les changements d'état utilisateur
 watch(() => state.user, (newUser) => {
   if (newUser && newUser.userId) {
     loadTasks();
@@ -289,7 +261,7 @@ async function addTask() {
       showAddTask.value = false;
       newTitle.value = '';
       newDescription.value = '';
-      await loadTasks(); // Recharger les tâches
+      await loadTasks();
     } else {
       errorMessage.value = 'Erreur lors de l\'ajout de la tâche';
     }
@@ -371,6 +343,28 @@ async function closeTask(task) {
   }
 }
 
+async function handleTaskTransferred(transferData) {
+  try {
+    const message = `Tâche transférée avec succès à ${transferData.newOwnerName}`;
+    
+    const notification = document.createElement('div');
+    notification.className = 'transfer-notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 3000);
+    
+    await loadTasks();
+  } catch (error) {
+    console.error('Erreur lors de la gestion du transfert:', error);
+    errorMessage.value = 'Erreur lors de la mise à jour des tâches';
+  }
+}
+
 function logout() {
   state.user = null;
   state.tasks = [];
@@ -382,22 +376,50 @@ function logout() {
 ion-content {
   display: flex;
   flex-direction: column;
+  padding-bottom: 80px;
 }
+
 .task-list {
   margin-top: 16px;
 }
+
 .button-group {
   display: flex;
   gap: 8px;
+  margin-bottom: 16px;
 }
+
 .button-group ion-button {
   flex: 1;
 }
-.fade-in {
-  animation: fadeIn 1s ease-in-out;
+
+@media (max-width: 576px) {
+  .button-group {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+
+.transfer-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2dd36f;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10000;
+  font-weight: 500;
+}
+
+@media (max-width: 576px) {
+  .transfer-notification {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    text-align: center;
+  }
 }
 </style>

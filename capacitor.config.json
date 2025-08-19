@@ -1,0 +1,30 @@
+{
+  "appId": "com.mytasks.ionic",
+  "appName": "MyTasks",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#3880ff",
+      "showSpinner": false,
+      "androidSpinnerStyle": "large",
+      "iosSpinnerStyle": "small",
+      "spinnerColor": "#999999",
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "StatusBar": {
+      "style": "dark",
+      "backgroundColor": "#3880ff"
+    }
+  },
+  "android": {
+    "minWebViewVersion": 55
+  },
+  "ios": {
+    "minVersion": "13.0"
+  }
+}
