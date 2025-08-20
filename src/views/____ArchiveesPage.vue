@@ -1,9 +1,9 @@
 <template>
   <ion-page>
     <ion-header>
-      <ion-toolbar color="secondary">
+      <ion-toolbar color="tertiary">
         <ion-title>
-          Tâches Fermées
+          Tâches Archivées
         </ion-title>
         <ion-buttons slot="end">
           <ion-button @click="logout">Déconnexion</ion-button>
@@ -11,7 +11,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding fade-in">
+    <ion-content class="ion-padding">
       <!-- Message d'erreur -->
       <ion-text v-if="errorMessage" color="danger" class="ion-margin-bottom">
         {{ errorMessage }}
@@ -21,7 +21,7 @@
       <ion-card v-if="!state.user || !state.user.userId" class="ion-margin-bottom" color="warning">
         <ion-card-content>
           <ion-text color="warning">
-            Vous devez être connecté pour gérer vos tâches
+            Vous devez être connecté pour consulter les tâches
           </ion-text>
         </ion-card-content>
       </ion-card>
@@ -30,27 +30,30 @@
       <ion-card class="ion-margin-bottom">
         <ion-card-content>
           <ion-text color="medium">
-            {{ closedTasks.length }} tâche{{ closedTasks.length > 1 ? 's' : '' }} fermée{{ closedTasks.length > 1 ? 's' : '' }} de tous les utilisateurs
+            {{ archivedTasks.length }} tâche{{ archivedTasks.length > 1 ? 's' : '' }} archivée{{ archivedTasks.length > 1 ? 's' : '' }} de tous les utilisateurs
           </ion-text>
         </ion-card-content>
       </ion-card>
 
-      <!-- Liste des tâches fermées -->
-      <div v-if="closedTasks.length > 0" class="task-list">
+      <!-- Information sur les tâches archivées -->
+      <ion-card class="ion-margin-bottom" color="light">
+        <ion-card-content>
+          <ion-text color="medium">
+            Les tâches archivées sont en lecture seule. Seul un administrateur peut modifier leur statut via Firestore.
+          </ion-text>
+        </ion-card-content>
+      </ion-card>
+
+      <!-- Liste des tâches archivées -->
+      <div v-if="archivedTasks.length > 0" class="task-list">
         <TaskItem
-          v-for="task in closedTasks"
+          v-for="task in archivedTasks"
           :key="task.taskId"
           :task="task"
           :showOwner="true"
-        >
-          <template #actions v-if="task.ownerId === state.user?.userId">
-            <ion-button size="small" color="warning" @click="archiveTask(task)">
-              Archiver
-            </ion-button>
-          </template>
-        </TaskItem>
+        />
       </div>
-      <ion-text v-else-if="state.user && state.user.userId" color="medium">Aucune tâche fermée.</ion-text>
+      <ion-text v-else-if="state.user && state.user.userId" color="medium">Aucune tâche archivée.</ion-text>
     </ion-content>
   </ion-page>
 </template>
@@ -58,8 +61,8 @@
 <script setup>
 import { 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
-  IonButton, IonText, IonButtons,
-  IonCard, IonCardContent
+  IonText, IonSpinner,
+  IonCard, IonCardContent, IonItem, IonLabel, IonInput
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
 import { tasksService, userService, auth } from '@/firebase';
@@ -70,9 +73,9 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 const errorMessage = ref('');
 
-// Tâches fermées de tous les utilisateurs
-const closedTasks = computed(() => {
-  return state.tasks.filter(task => task.status === 'fermee');
+// Toutes les tâches archivées
+const archivedTasks = computed(() => {
+  return state.tasks.filter(task => task.status === 'archivee');
 });
 
 const router = useRouter();
@@ -114,40 +117,6 @@ async function loadTasks() {
   }
 }
 
-async function archiveTask(task) {
-  if (!confirm('Archiver cette tâche ?')) return;
-  
-  errorMessage.value = '';
-  
-  try {
-    console.log('Archivage de la tâche:', task);
-    
-    const result = await tasksService.updateTask({
-      taskId: task.taskId,
-      ownerId: task.ownerId,
-      title: task.title,
-      description: task.description,
-      status: 'archivee'
-    });
-    
-    if (result.success) {
-      console.log('Tâche archivée avec succès');
-      // Mettre à jour l'état local immédiatement
-      const taskIndex = state.tasks.findIndex(t => t.taskId === task.taskId);
-      if (taskIndex !== -1) {
-        state.tasks[taskIndex].status = 'archivee';
-      }
-      // Recharger depuis Firebase pour confirmation
-      await loadTasks();
-    } else {
-      errorMessage.value = 'Erreur lors de l\'archivage: ' + (result.error || 'Erreur inconnue');
-    }
-  } catch (e) {
-    console.error('Erreur archiveTask:', e);
-    errorMessage.value = 'Erreur lors de l\'archivage de la tâche: ' + e.message;
-  }
-}
-
 function logout() {
   state.user = null;
   state.tasks = [];
@@ -162,12 +131,5 @@ ion-content {
 }
 .task-list {
   margin-top: 16px;
-}
-.fade-in {
-  animation: fadeIn 1s ease-in-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 </style>

@@ -30,7 +30,7 @@
       <ion-card class="ion-margin-bottom">
         <ion-card-content>
           <ion-text color="medium">
-            {{ closedTasks.length }} tâche{{ closedTasks.length > 1 ? 's' : '' }} fermée{{ closedTasks.length > 1 ? 's' : '' }} de tous les utilisateurs
+            {{ closedTasks.length }} tâche{{ closedTasks.length > 1 ? 's' : '' }} fermée{{ closedTasks.length > 1 ? 's' : '' }}
           </ion-text>
         </ion-card-content>
       </ion-card>
@@ -44,6 +44,10 @@
           :showOwner="true"
         >
           <template #actions v-if="task.ownerId === state.user?.userId">
+            <ion-button size="small" color="success" @click="reopenTask(task)">
+           
+              Réouvrir
+            </ion-button>
             <ion-button size="small" color="warning" @click="archiveTask(task)">
               Archiver
             </ion-button>
@@ -62,7 +66,8 @@ import {
   IonCard, IonCardContent
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
-import { tasksService, userService, auth } from '@/firebase';
+import { firebaseService } from '@/firebase';
+import { auth } from '@/firebase';
 import { state } from '@/store/state';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -70,9 +75,21 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 const errorMessage = ref('');
 
-// Tâches fermées de tous les utilisateurs
+// Tâches fermées avec tri par date décroissante
 const closedTasks = computed(() => {
-  return state.tasks.filter(task => task.status === 'fermee');
+  let filteredTasks = state.tasks.filter(task => 
+    task.ownerId === state.user?.userId && 
+    task.status === 'fermee'
+  );
+  
+  // Tri par date de création décroissante
+  filteredTasks.sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+    return dateB - dateA;
+  });
+  
+  return filteredTasks;
 });
 
 const router = useRouter();
@@ -101,16 +118,36 @@ async function loadTasks() {
   errorMessage.value = '';
   
   try {
-    const userResponse = await userService.getUserInfo(auth.currentUser.uid);
+    const userResponse = await firebaseService.getUserInfo(auth.currentUser.uid);
     if (userResponse.success) {
       state.user = userResponse.user;
     }
     
-    const response = await tasksService.getAllTasks();
+    const response = await firebaseService.getAllTasks();
     state.tasks = response.tasks;
   } catch (e) {
     console.error('Erreur loadTasks:', e);
     errorMessage.value = 'Erreur lors du chargement des tâches';
+  }
+}
+
+async function reopenTask(task) {
+  if (!confirm('Réouvrir cette tâche ?')) return;
+  
+  errorMessage.value = '';
+  
+  try {
+    await firebaseService.updateTask({
+      taskId: task.taskId,
+      ownerId: task.ownerId,
+      title: task.title,
+      description: task.description,
+      status: 'active'
+    });
+    await loadTasks();
+  } catch (e) {
+    console.error('Erreur reopenTask:', e);
+    errorMessage.value = 'Erreur lors de la réouverture de la tâche';
   }
 }
 
@@ -120,31 +157,17 @@ async function archiveTask(task) {
   errorMessage.value = '';
   
   try {
-    console.log('Archivage de la tâche:', task);
-    
-    const result = await tasksService.updateTask({
+    await firebaseService.updateTask({
       taskId: task.taskId,
       ownerId: task.ownerId,
       title: task.title,
       description: task.description,
       status: 'archivee'
     });
-    
-    if (result.success) {
-      console.log('Tâche archivée avec succès');
-      // Mettre à jour l'état local immédiatement
-      const taskIndex = state.tasks.findIndex(t => t.taskId === task.taskId);
-      if (taskIndex !== -1) {
-        state.tasks[taskIndex].status = 'archivee';
-      }
-      // Recharger depuis Firebase pour confirmation
-      await loadTasks();
-    } else {
-      errorMessage.value = 'Erreur lors de l\'archivage: ' + (result.error || 'Erreur inconnue');
-    }
+    await loadTasks();
   } catch (e) {
     console.error('Erreur archiveTask:', e);
-    errorMessage.value = 'Erreur lors de l\'archivage de la tâche: ' + e.message;
+    errorMessage.value = 'Erreur lors de l\'archivage de la tâche';
   }
 }
 

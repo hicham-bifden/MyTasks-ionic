@@ -4,7 +4,6 @@
     <ion-header>
       <ion-toolbar color="primary">
         <ion-title>
-          <ion-icon name="list-outline" style="margin-right:8px;" />
           Mes tâches
         </ion-title>
         <ion-buttons slot="end">
@@ -20,10 +19,9 @@
         color="success" 
         @click="showAddTask = true" 
         class="ion-margin-bottom"
-        :disabled="!state.user || !state.user.uid"
+        :disabled="!state.user || !state.user.userId"
       >
-        <ion-icon slot="start" name="add-circle-outline" /> 
-        {{ state.user && state.user.uid ? 'Ajouter une tâche' : 'Connectez-vous pour ajouter une tâche' }}
+                  {{ state.user && state.user.userId ? 'Ajouter une tâche' : 'Connectez-vous pour ajouter une tâche' }}
       </ion-button>
 
       <!-- Barre de recherche -->
@@ -46,10 +44,9 @@
       </ion-text>
 
       <!-- Message si utilisateur non connecté -->
-      <ion-card v-if="!state.user || !state.user.uid" class="ion-margin-bottom" color="warning">
+      <ion-card v-if="!state.user || !state.user.userId" class="ion-margin-bottom" color="warning">
         <ion-card-content>
           <ion-text color="warning">
-            <ion-icon name="warning-outline" style="margin-right:8px;" />
             Vous devez être connecté pour gérer vos tâches
           </ion-text>
         </ion-card-content>
@@ -71,14 +68,14 @@
       <div v-if="myTasks.length > 0" class="task-list">
         <TaskItem
           v-for="task in myTasks"
-          :key="task.id"
+          :key="task.taskId"
           :task="task"
           :showOwner="false"
           @edit="editTask"
           @delete="deleteTask"
         />
       </div>
-      <ion-text v-else-if="!isLoading" color="medium">Aucune tâche active.</ion-text>
+      <ion-text v-else-if="state.user && state.user.userId" color="medium">Aucune tâche active.</ion-text>
 
       <!-- Modal ajout -->
       <ion-modal :is-open="showAddTask" @didDismiss="showAddTask = false">
@@ -141,7 +138,7 @@
 import { 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
   IonButton, IonText, IonModal, IonItem, IonLabel, 
-  IonInput, IonButtons, IonCheckbox, IonIcon, IonSpinner,
+  IonInput, IonButtons, IonCheckbox, IonSpinner,
   IonCard, IonCardContent
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
@@ -151,6 +148,7 @@ import { state } from '@/store/state';
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { onAuthStateChanged } from 'firebase/auth';
+import { tasksService, userService, auth } from '@/firebase';
 
 const showAddTask = ref(false);
 const newTitle = ref('');
@@ -165,10 +163,10 @@ const showEditTask = ref(false);
 const editTaskId = ref(null);
 const editTitle = ref('');
 const editDescription = ref('');
-const editIsDone = ref(false);
+
 
 const myTasks = computed(() => {
-  let filteredTasks = state.tasks.filter(task => task.userId === state.user?.uid);
+  let filteredTasks = state.tasks.filter(task => task.ownerId === state.user?.userId);
   
   // Recherche par titre ou description
   if (searchTerm.value.trim()) {
@@ -179,12 +177,7 @@ const myTasks = computed(() => {
     );
   }
   
-  // Tri par date de création décroissante (selon les consignes)
-  filteredTasks.sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-    return dateB - dateA; // Décroissant
-  });
+
   
   return filteredTasks;
 });
@@ -212,17 +205,13 @@ async function loadTasks() {
   
   try {
     // Récupérer les informations utilisateur depuis Firestore
-    const userResponse = await firebaseService.getUserInfo(auth.currentUser.uid);
+    const userResponse = await userService.getUserInfo(auth.currentUser.uid);
     if (userResponse.success) {
       state.user = userResponse.user;
     }
     
-    const response = await firebaseService.getAllTasks();
-    // Marquer les tâches comme appartenant ou non à l'utilisateur connecté
-    state.tasks = response.tasks.map(task => ({
-      ...task,
-      isOwner: task.userId === auth.currentUser.uid
-    })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const response = await tasksService.getAllTasks();
+    state.tasks = response.tasks;
   } catch (e) {
     console.error('Erreur loadTasks:', e);
     errorMessage.value = 'Erreur lors du chargement des tâches';
@@ -233,7 +222,7 @@ async function loadTasks() {
 
 async function addTask() {
   // Vérifier que l'utilisateur est connecté
-  if (!state.user || !state.user.uid) {
+  if (!state.user || !state.user.userId) {
     errorMessage.value = 'Vous devez être connecté pour ajouter une tâche';
     return;
   }
@@ -248,11 +237,10 @@ async function addTask() {
   errorMessage.value = '';
   
   try {
-    await firebaseService.addTask({
-      userId: state.user.uid,
+    await tasksService.addTask({
+      ownerId: state.user.userId,
       title: newTitle.value,
-      description: newDescription.value,
-      isDone: false
+      description: newDescription.value
     });
     showAddTask.value = false;
     newTitle.value = '';
@@ -267,10 +255,9 @@ async function addTask() {
 }
 
 function editTask(task) {
-  editTaskId.value = task.id;
+  editTaskId.value = task.taskId;
   editTitle.value = task.title;
   editDescription.value = task.description;
-  editIsDone.value = task.isDone;
   showEditTask.value = true;
 }
 
@@ -284,7 +271,7 @@ function closeEditTask() {
 
 async function updateTask() {
   // Vérifier que l'utilisateur est connecté
-  if (!state.user || !state.user.uid) {
+  if (!state.user || !state.user.userId) {
     errorMessage.value = 'Vous devez être connecté pour modifier une tâche';
     return;
   }
@@ -293,12 +280,12 @@ async function updateTask() {
   errorMessage.value = '';
   
   try {
-    await firebaseService.updateTask({
-      id: editTaskId.value,
-      userId: state.user.uid,
+    await tasksService.updateTask({
+      taskId: editTaskId.value,
+      ownerId: state.user.userId,
       title: editTitle.value,
       description: editDescription.value,
-      isDone: editIsDone.value
+      status: 'active'
     });
     closeEditTask();
     await loadTasks();
@@ -317,7 +304,7 @@ async function deleteTask(task) {
   errorMessage.value = '';
   
   try {
-    await firebaseService.removeTask(task.id);
+    await tasksService.removeTask(task.taskId);
     await loadTasks();
   } catch (e) {
     console.error('Erreur deleteTask:', e);

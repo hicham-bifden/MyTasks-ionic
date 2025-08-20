@@ -35,26 +35,6 @@
         </ion-card-content>
       </ion-card>
 
-      <div class="button-group ion-margin-bottom">
-        <ion-button 
-          expand="block" 
-          :color="!showOtherTasks ? 'primary' : 'light'"
-          @click="showOtherTasks = false"
-          :disabled="!state.user || !state.user.userId"
-        >
-          Mes Tâches
-        </ion-button>
-        
-        <ion-button 
-          expand="block" 
-          :color="showOtherTasks ? 'tertiary' : 'light'"
-          @click="showOtherTasks = true"
-          :disabled="!state.user || !state.user.userId"
-        >
-          Tâches des Autres
-        </ion-button>
-      </div>
-
       <ion-text v-if="errorMessage" color="danger" class="ion-margin-bottom">
         {{ errorMessage }}
       </ion-text>
@@ -70,8 +50,7 @@
       <ion-card class="ion-margin-bottom">
         <ion-card-content>
           <ion-text color="medium">
-            {{ filteredTasks.length }} tâche{{ filteredTasks.length > 1 ? 's' : '' }} active{{ filteredTasks.length > 1 ? 's' : '' }}
-            {{ showOtherTasks ? 'des autres utilisateurs' : 'de l\'utilisateur connecté' }}
+            {{ filteredTasks.length }} tâche{{ filteredTasks.length > 1 ? 's' : '' }} active{{ filteredTasks.length > 1 ? 's' : '' }} de tous les utilisateurs
           </ion-text>
         </ion-card-content>
       </ion-card>
@@ -82,8 +61,6 @@
           :key="task.taskId"
           :task="task"
           :showOwner="true"
-          :showTransfer="task.ownerId === state.user?.userId"
-          @taskTransferred="handleTaskTransferred"
         >
           <template #actions v-if="task.ownerId === state.user?.userId">
             <ion-button size="small" color="primary" @click="editTask(task)">
@@ -91,6 +68,9 @@
             </ion-button>
             <ion-button size="small" color="secondary" @click="closeTask(task)">
               Fermer
+            </ion-button>
+            <ion-button size="small" color="tertiary" @click="openTransferTask(task)">
+              Transférer
             </ion-button>
             <ion-button size="small" color="danger" @click="deleteTask(task)">
               Supprimer
@@ -149,6 +129,54 @@
           </form>
         </ion-content>
       </ion-modal>
+
+      <!-- Modal de transfert de tâche -->
+      <ion-modal :is-open="showTransferTask" @didDismiss="closeTransferTask">
+        <ion-header>
+          <ion-toolbar color="tertiary">
+            <ion-title>Transférer la tâche</ion-title>
+            <ion-buttons slot="end">
+              <ion-button @click="closeTransferTask">Fermer</ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <div class="transfer-info">
+            <ion-text color="medium">
+              <strong>Tâche :</strong> {{ transferTaskTitle }}<br>
+              <strong>Description :</strong> {{ transferTaskDescription }}
+            </ion-text>
+          </div>
+          
+          <form @submit.prevent="confirmTransfer">
+            <ion-item>
+              <ion-label position="floating">Email du nouveau propriétaire</ion-label>
+              <ion-input 
+                v-model="transferEmail" 
+                type="email" 
+                placeholder="exemple@email.com"
+                required
+              ></ion-input>
+            </ion-item>
+            
+            <div class="transfer-warning">
+              <ion-text color="warning">
+                ⚠️ Cette action transférera définitivement la propriété de cette tâche.
+              </ion-text>
+            </div>
+            
+            <ion-button 
+              expand="block" 
+              color="tertiary" 
+              type="submit" 
+              class="ion-margin-top"
+              :disabled="!transferEmail || transferEmail.trim() === ''"
+            >
+              Confirmer le transfert
+            </ion-button>
+          </form>
+        </ion-content>
+      </ion-modal>
     </ion-content>
   </ion-page>
 </template>
@@ -160,8 +188,7 @@ import {
   IonInput, IonButtons, IonCard, IonCardContent
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
-import { firebaseService } from '@/firebase';
-import { auth } from '@/firebase';
+import { tasksService, userService, auth } from '@/firebase';
 import { state } from '@/store/state';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -172,21 +199,21 @@ const newTitle = ref('');
 const newDescription = ref('');
 const errorMessage = ref('');
 const searchTerm = ref('');
-const showOtherTasks = ref(false);
 
 const showEditTask = ref(false);
 const editTaskId = ref(null);
 const editTitle = ref('');
 const editDescription = ref('');
 
+// Variables pour le transfert
+const showTransferTask = ref(false);
+const transferTaskId = ref(null);
+const transferTaskTitle = ref('');
+const transferTaskDescription = ref('');
+const transferEmail = ref('');
+
 const filteredTasks = computed(() => {
   let filteredTasks = state.tasks.filter(task => task.status === 'active');
-  
-  if (showOtherTasks.value) {
-    filteredTasks = filteredTasks.filter(task => task.ownerId !== state.user?.userId);
-  } else {
-    filteredTasks = filteredTasks.filter(task => task.ownerId === state.user?.userId);
-  }
   
   if (searchTerm.value.trim()) {
     const searchLower = searchTerm.value.toLowerCase();
@@ -224,12 +251,12 @@ async function loadTasks() {
   errorMessage.value = '';
   
   try {
-    const userResponse = await firebaseService.getUserInfo(auth.currentUser.uid);
+    const userResponse = await userService.getUserInfo(auth.currentUser.uid);
     if (userResponse.success) {
       state.user = userResponse.user;
     }
     
-    const response = await firebaseService.getAllTasks();
+    const response = await tasksService.getAllTasks();
     state.tasks = response.tasks;
   } catch (e) {
     console.error('Erreur loadTasks:', e);
@@ -251,7 +278,7 @@ async function addTask() {
   errorMessage.value = '';
   
   try {
-    const result = await firebaseService.addTask({
+    const result = await tasksService.addTask({
       ownerId: state.user.userId,
       title: newTitle.value,
       description: newDescription.value
@@ -294,7 +321,7 @@ async function updateTask() {
   errorMessage.value = '';
   
   try {
-    await firebaseService.updateTask({
+    await tasksService.updateTask({
       taskId: editTaskId.value,
       ownerId: state.user.userId,
       title: editTitle.value,
@@ -315,7 +342,7 @@ async function deleteTask(task) {
   errorMessage.value = '';
   
   try {
-    await firebaseService.removeTask(task.taskId);
+    await tasksService.removeTask(task.taskId);
     await loadTasks();
   } catch (e) {
     console.error('Erreur deleteTask:', e);
@@ -329,7 +356,7 @@ async function closeTask(task) {
   errorMessage.value = '';
   
   try {
-    await firebaseService.updateTask({
+    await tasksService.updateTask({
       taskId: task.taskId,
       ownerId: task.ownerId,
       title: task.title,
@@ -343,25 +370,44 @@ async function closeTask(task) {
   }
 }
 
-async function handleTaskTransferred(transferData) {
+// Fonctions de transfert
+function openTransferTask(task) {
+  transferTaskId.value = task.taskId;
+  transferTaskTitle.value = task.title;
+  transferTaskDescription.value = task.description;
+  transferEmail.value = '';
+  showTransferTask.value = true;
+}
+
+function closeTransferTask() {
+  showTransferTask.value = false;
+  transferTaskId.value = null;
+  transferTaskTitle.value = '';
+  transferTaskDescription.value = '';
+  transferEmail.value = '';
+}
+
+async function confirmTransfer() {
+  if (!transferEmail.value || transferEmail.value.trim() === '') {
+    return;
+  }
+  
+  errorMessage.value = '';
+  
   try {
-    const message = `Tâche transférée avec succès à ${transferData.newOwnerName}`;
+    const result = await tasksService.transferTask(transferTaskId.value, transferEmail.value.trim());
     
-    const notification = document.createElement('div');
-    notification.className = 'transfer-notification';
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 3000);
-    
-    await loadTasks();
-  } catch (error) {
-    console.error('Erreur lors de la gestion du transfert:', error);
-    errorMessage.value = 'Erreur lors de la mise à jour des tâches';
+    if (result.success) {
+      closeTransferTask();
+      await loadTasks();
+      // Afficher un message de succès
+      alert(`Tâche transférée avec succès à ${result.newOwnerName}`);
+    } else {
+      errorMessage.value = `Erreur lors du transfert: ${result.error}`;
+    }
+  } catch (e) {
+    console.error('Erreur confirmTransfer:', e);
+    errorMessage.value = 'Erreur lors du transfert de la tâche';
   }
 }
 
@@ -383,43 +429,19 @@ ion-content {
   margin-top: 16px;
 }
 
-.button-group {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.button-group ion-button {
-  flex: 1;
-}
-
-@media (max-width: 576px) {
-  .button-group {
-    flex-direction: column;
-    gap: 8px;
-  }
-}
-
-.transfer-notification {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #2dd36f;
-  color: white;
-  padding: 12px 24px;
+.transfer-info {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(82, 96, 255, 0.1);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 10000;
-  font-weight: 500;
+  border-left: 4px solid var(--ion-color-tertiary);
 }
 
-@media (max-width: 576px) {
-  .transfer-notification {
-    left: 16px;
-    right: 16px;
-    transform: none;
-    text-align: center;
-  }
+.transfer-warning {
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(255, 196, 9, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid var(--ion-color-warning);
 }
 </style>

@@ -3,7 +3,6 @@
     <ion-header>
       <ion-toolbar color="warning">
         <ion-title>
-          <ion-icon name="archive" style="margin-right:8px;" />
           Tâches Archivées
         </ion-title>
         <ion-buttons slot="end">
@@ -12,7 +11,7 @@
       </ion-toolbar>
     </ion-header>
 
-    <ion-content class="ion-padding fade-in">
+    <ion-content class="ion-padding">
       <!-- Message d'erreur -->
       <ion-text v-if="errorMessage" color="danger" class="ion-margin-bottom">
         {{ errorMessage }}
@@ -22,7 +21,6 @@
       <ion-card v-if="!state.user || !state.user.userId" class="ion-margin-bottom" color="warning">
         <ion-card-content>
           <ion-text color="warning">
-            <ion-icon name="alert-circle" style="margin-right:8px;" />
             Vous devez être connecté pour consulter les tâches
           </ion-text>
         </ion-card-content>
@@ -41,7 +39,6 @@
       <ion-card class="ion-margin-bottom" color="light">
         <ion-card-content>
           <ion-text color="medium">
-            <ion-icon name="information-circle" style="margin-right:8px;" />
             Les tâches archivées sont en lecture seule. Seul un administrateur peut modifier leur statut via Firestore.
           </ion-text>
         </ion-card-content>
@@ -64,31 +61,22 @@
 <script setup>
 import {
   IonPage, IonHeader, IonToolbar, IonTitle,
-  IonContent, IonText, IonButtons, IonIcon,
+  IonContent, IonText, IonButtons, IonButton,
   IonCard, IonCardContent
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';
 import { state } from '@/store/state';
 import { computed, onMounted, ref, watch } from 'vue';
-import { firebaseService } from '@/firebase';
+import { tasksService, userService } from '@/firebase';
 import { auth } from '@/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'vue-router';
 
 const errorMessage = ref('');
 
-// Toutes les tâches archivées avec tri par date décroissante
+// Toutes les tâches archivées
 const archivedTasks = computed(() => {
-  let filteredTasks = state.tasks.filter(task => task.status === 'archivee');
-  
-  // Tri par date de création décroissante
-  filteredTasks.sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-    return dateB - dateA;
-  });
-  
-  return filteredTasks;
+  return state.tasks.filter(task => task.status === 'archivee');
 });
 
 const router = useRouter();
@@ -118,15 +106,15 @@ async function loadTasks() {
   errorMessage.value = '';
   
   try {
-    const userResponse = await firebaseService.getUserInfo(auth.currentUser.uid);
+    const userResponse = await userService.getUserInfo(auth.currentUser.uid);
     if (userResponse.success) {
       state.user = userResponse.user;
     }
     
-    const response = await firebaseService.getAllTasks();
+    const response = await tasksService.getAllTasks();
     state.tasks = response.tasks;
-  } catch (error) {
-    console.error('Erreur lors du chargement des tâches:', error);
+  } catch (e) {
+    console.error('Erreur loadTasks:', e);
     errorMessage.value = 'Erreur lors du chargement des tâches';
   }
 }
@@ -145,12 +133,5 @@ ion-content {
 }
 .task-list {
   margin-top: 16px;
-}
-.fade-in {
-  animation: fadeIn 1s ease-in-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 </style>

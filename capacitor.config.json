@@ -1,7 +1,7 @@
 {
   "appId": "com.mytasks.ionic",
   "appName": "MyTasks",
-  "webDir": "dist",
+  "webDir": "public",
   "server": {
     "androidScheme": "https"
   },

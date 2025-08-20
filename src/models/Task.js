@@ -7,6 +7,7 @@ export default class Task {
     this.description = description;
     this.status = status;
     this.createdAt = createdAt;
+    this.ownerName = null; // Sera rempli par le service
   }
   
   // Méthode pour créer une tâche depuis Firestore

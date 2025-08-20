@@ -3,7 +3,6 @@
     <ion-header>
       <ion-toolbar color="tertiary">
         <ion-title>
-          <ion-icon name="archive-outline" style="margin-right:8px;" />
           Tâches Archivées
         </ion-title>
       </ion-toolbar>
@@ -58,7 +57,7 @@
 <script setup>
 import { 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, 
-  IonText, IonIcon, IonSpinner,
+  IonText, IonSpinner,
   IonCard, IonCardContent, IonItem, IonLabel, IonInput
 } from '@ionic/vue';
 import TaskItem from '@/components/TaskItem.vue';

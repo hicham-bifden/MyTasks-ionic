@@ -5,7 +5,6 @@
       :class="{active: $route.path === '/actives'}"
       class="tab-button"
     >
-      <ion-icon name="checkmark-circle" />
       <span>Actives</span>
     </button>
     
@@ -14,7 +13,6 @@
       :class="{active: $route.path === '/fermees'}"
       class="tab-button"
     >
-      <ion-icon name="close-circle" />
       <span>Fermées</span>
     </button>
     
@@ -23,14 +21,13 @@
       :class="{active: $route.path === '/archivees'}"
       class="tab-button"
     >
-      <ion-icon name="archive" />
       <span>Archivées</span>
     </button>
   </div>
 </template>
 
 <script setup>
-import { IonIcon } from '@ionic/vue';
+// Aucun import nécessaire
 </script>
 
 <style scoped>
@@ -78,12 +75,6 @@ import { IonIcon } from '@ionic/vue';
   transform: scaleX(1);
 }
 
-.tab-button ion-icon {
-  font-size: 24px;
-  margin-bottom: 4px;
-  transition: all 0.2s ease;
-}
-
 .tab-button span {
   font-size: var(--mobile-font-size-small);
   font-weight: 500;
@@ -93,11 +84,6 @@ import { IonIcon } from '@ionic/vue';
 .tab-button.active {
   background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
-}
-
-.tab-button.active ion-icon {
-  color: var(--ion-color-primary);
-  transform: scale(1.1);
 }
 
 .tab-button.active span {
@@ -129,11 +115,6 @@ import { IonIcon } from '@ionic/vue';
     min-height: 56px;
   }
   
-  .tab-button ion-icon {
-    font-size: 20px;
-    margin-bottom: 2px;
-  }
-  
   .tab-button span {
     font-size: 12px;
   }
@@ -144,10 +125,6 @@ import { IonIcon } from '@ionic/vue';
   .tab-button {
     padding: 12px 8px;
     min-height: 52px;
-  }
-  
-  .tab-button ion-icon {
-    font-size: 22px;
   }
   
   .tab-button span {
@@ -166,10 +143,6 @@ import { IonIcon } from '@ionic/vue';
   .tab-button {
     padding: 16px 12px;
     min-height: 60px;
-  }
-  
-  .tab-button ion-icon {
-    font-size: 26px;
   }
   
   .tab-button span {
